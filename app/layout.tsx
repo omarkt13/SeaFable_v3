@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
+import { AuthProvider } from "@/components/auth/auth-provider"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,8 +13,9 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "SailVoyage - Premium Sailing Experiences",
-  description: "Discover and book premium sailing experiences with expert captains worldwide",
+  title: "SeaFable - Book Water Sports & Marine Activities",
+  description:
+    "Discover and book premium water sports experiences, sailing adventures, and marine activities worldwide",
     generator: 'v0.dev'
 }
 
@@ -25,9 +27,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${inter.className}`}>
-        <Navigation />
-        <main>{children}</main>
-        <Footer />
+        <AuthProvider>
+          <Navigation />
+          <main>{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   )

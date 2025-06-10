@@ -13,12 +13,12 @@ import { Waves } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/components/auth/auth-provider"
 
-export default function LoginPage() {
+export default function BusinessLoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
+  const { businessLogin } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,10 +26,10 @@ export default function LoginPage() {
     setIsLoading(true)
     setError("")
 
-    const result = await login(email, password)
+    const result = await businessLogin(email, password)
 
     if (result.success) {
-      router.push("/dashboard")
+      router.push("/business/dashboard")
     } else {
       setError(result.error || "Login failed")
     }
@@ -44,8 +44,8 @@ export default function LoginPage() {
           <div className="flex justify-center mb-4">
             <Waves className="h-8 w-8 text-blue-600" />
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome to SeaFable</CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+          <CardTitle className="text-2xl font-bold">SeaFable Business</CardTitle>
+          <CardDescription>Sign in to your business account</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -63,7 +63,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="Enter your email"
+                placeholder="Enter your business email"
                 disabled={isLoading}
               />
             </div>
@@ -88,15 +88,15 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
-              <Link href="/register" className="text-blue-600 hover:underline">
-                Sign up
+              Don't have a business account?{" "}
+              <Link href="/business/setup" className="text-blue-600 hover:underline">
+                Get started
               </Link>
             </p>
             <p className="text-sm text-gray-600 mt-2">
-              Business owner?{" "}
-              <Link href="/business/login" className="text-blue-600 hover:underline">
-                Business login
+              Customer login?{" "}
+              <Link href="/login" className="text-blue-600 hover:underline">
+                Sign in here
               </Link>
             </p>
           </div>
@@ -105,7 +105,7 @@ export default function LoginPage() {
             <p className="text-xs text-blue-800">
               <strong>Demo credentials:</strong>
               <br />
-              Email: demo@seafable.com
+              Email: captain@seafable.com
               <br />
               Password: password123
             </p>
