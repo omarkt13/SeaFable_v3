@@ -4,16 +4,21 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true, // Updated from false to true
+    ignoreBuildErrors: true,
   },
   images: {
     unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
   },
   experimental: {
     serverComponentsExternalPackages: ['bcryptjs']
   },
   webpack: (config, { isServer }) => {
-    // Only add fallbacks for client-side builds
     if (!isServer) {
       config.resolve.fallback = {
         fs: false,
