@@ -16,7 +16,7 @@ const nextConfig = {
     ],
   },
   experimental: {
-    serverComponentsExternalPackages: ['bcryptjs']
+    serverComponentsExternalPackages: ['bcryptjs', '@supabase/supabase-js']
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -39,6 +39,8 @@ const nextConfig = {
     }
     return config
   },
+  swcMinify: true,
+  compress: true,
 }
 
 export default nextConfig
