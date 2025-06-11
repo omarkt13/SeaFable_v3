@@ -16,9 +16,10 @@ const nextConfig = {
     ],
   },
   experimental: {
-    serverComponentsExternalPackages: ['bcryptjs', '@supabase/supabase-js']
+    serverComponentsExternalPackages: ['bcryptjs', '@supabase/supabase-js'],
+    webpackMemoryOptimizations: true,
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
     if (!isServer) {
       config.resolve.fallback = {
         fs: false,
@@ -36,6 +37,12 @@ const nextConfig = {
         url: false,
         querystring: false,
       }
+    }
+    // Disable webpack cache for production builds
+    if (config.cache && !dev) {
+      config.cache = Object.freeze({
+        type: 'memory',
+      })
     }
     return config
   },

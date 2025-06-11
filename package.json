@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "NODE_OPTIONS='--max_old_space_size=4096' next build",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit --skipLibCheck",
-    "clean": "rm -rf .next out node_modules/.cache"
+    "clean": "rm -rf .next out node_modules/.cache",
+    "find-requires": "grep -r --include='*.{js,jsx,ts,tsx}' 'require(' . --exclude-dir={node_modules,.next}"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",
