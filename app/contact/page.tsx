@@ -140,7 +140,7 @@ export default function ContactPage() {
                     <Mail className="h-5 w-5 text-primary mt-0.5" />
                     <div>
                       <div className="font-medium">Email</div>
-                      <div className="text-gray-600">hello@sailvoyage.com</div>
+                      <div className="text-gray-600">hello@SeaFable.com</div>
                     </div>
                   </div>
                   <div className="flex items-start space-x-3">

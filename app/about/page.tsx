@@ -44,7 +44,7 @@ const team = [
   {
     name: "Captain Alessandro",
     role: "Founder & Head of Operations",
-    bio: "With 25 years of sailing experience across the Mediterranean, Alessandro founded SailVoyage to share his passion for the sea with fellow adventurers.",
+    bio: "With 25 years of sailing experience across the Mediterranean, Alessandro founded SeaFable to share his passion for the sea with fellow adventurers.",
     image: "/placeholder.svg?height=200&width=200&text=Alessandro",
   },
   {
@@ -67,7 +67,7 @@ export default function AboutPage() {
       <div className="container">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl lg:text-5xl font-bold mb-6">About SailVoyage</h1>
+          <h1 className="text-4xl lg:text-5xl font-bold mb-6">About SeaFable</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             We're passionate sailors who believe the best way to experience the world's most beautiful coastlines is
             through the eyes of local captains who call these waters home.
@@ -81,7 +81,7 @@ export default function AboutPage() {
               <h2 className="text-3xl font-bold mb-6">Our Story</h2>
               <div className="space-y-4 text-gray-700">
                 <p>
-                  SailVoyage was born from a simple belief: the most memorable sailing experiences happen when you're
+                  SeaFable was born from a simple belief: the most memorable sailing experiences happen when you're
                   guided by someone who truly knows and loves their local waters.
                 </p>
                 <p>
@@ -133,7 +133,7 @@ export default function AboutPage() {
         <div className="mb-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Meet Our Team</h2>
-            <p className="text-xl text-gray-600">The passionate sailors behind SailVoyage</p>
+            <p className="text-xl text-gray-600">The passionate sailors behind SeaFable</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -156,7 +156,7 @@ export default function AboutPage() {
 
         {/* Stats */}
         <div className="bg-primary text-white rounded-lg p-8 text-center">
-          <h2 className="text-3xl font-bold mb-8">SailVoyage by the Numbers</h2>
+          <h2 className="text-3xl font-bold mb-8">SeaFable by the Numbers</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <div>
               <div className="text-3xl font-bold mb-2">200+</div>

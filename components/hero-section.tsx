@@ -35,11 +35,11 @@ export function HeroSection() {
       <div className="relative z-10 w-full max-w-4xl mx-auto px-4">
         <div className="text-center mb-8">
           <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
-            Discover Sailing
-            <span className="block text-teal-400">Experiences</span>
+            Discover Premium
+            <span className="block text-teal-400">Sailing Experiences</span>
           </h1>
           <p className="text-xl text-white/90 max-w-2xl mx-auto">
-            Book curated sailing journeys with local captains. Weather-optimized adventures await.
+            Book curated sailing journeys with expert captains. Premium experiences await.
           </p>
         </div>
 

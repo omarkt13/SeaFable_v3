@@ -29,28 +29,6 @@
   --gradient-from: #f3e8ff;
   --gradient-via: #e9d5ff;
   --gradient-to: #ddd6fe;
-
-  /* Updated color palette */
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 222.2 47.4% 11.2%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222.2 84% 4.9%;
-  --muted: 210 40% 96%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96%;
-  --accent-foreground: 222.2 84% 4.9%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 222.2 84% 4.9%;
-  --radius: 0.5rem;
 }
 
 * {
@@ -61,7 +39,8 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--font-inter), "Inter", sans-serif;
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-feature-settings: "cv11", "ss01";
+  font-variation-settings: "opsz" 32;
   line-height: 1.5;
 }
 
@@ -107,7 +86,7 @@ h6 {
 
 /* Navigation styling */
 .nav-link {
-  @apply text-gray-700 hover:text-gray-900 font-medium text-sm transition-colors duration-200;
+  @apply text-gray-700 hover:text-gray-900 font-medium transition-colors duration-200;
 }
 
 /* Stats styling */
@@ -116,20 +95,5 @@ h6 {
 }
 
 .stats-text {
-  @apply font-normal text-gray-700;
-}
-
-/* Section title styling */
-.section-title {
-  @apply text-2xl font-bold text-gray-900 mb-8;
-}
-
-/* Category card styling */
-.category-card {
-  @apply bg-white rounded-2xl p-6 hover:shadow-lg transition-shadow cursor-pointer border border-gray-100;
-}
-
-/* Experience card styling */
-.experience-card {
-  @apply bg-white rounded-2xl overflow-hidden hover:shadow-lg transition-shadow cursor-pointer border border-gray-100;
+  @apply text-gray-600 font-medium;
 }

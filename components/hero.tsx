@@ -2,11 +2,11 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Search, MapPin, Calendar, Clock } from "lucide-react"
+import { Search, MapPin, Calendar } from "lucide-react"
 
 export function Hero() {
   const [searchData, setSearchData] = useState({
-    activity: "",
+    service: "",
     location: "",
     date: "",
     time: "",
@@ -17,18 +17,18 @@ export function Hero() {
     Object.entries(searchData).forEach(([key, value]) => {
       if (value) params.set(key, value)
     })
-    window.location.href = `/activities?${params.toString()}`
+    window.location.href = `/experiences?${params.toString()}`
   }
 
   return (
-    <section className="bg-gradient-to-br from-purple-100 via-pink-50 to-purple-200 min-h-[85vh] flex items-center">
+    <section className="bg-gradient-to-br from-blue-600 via-teal-500 to-emerald-500 min-h-[80vh] flex items-center">
       <div className="container">
         <div className="max-w-4xl mx-auto text-center">
           {/* Main Heading */}
-          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 mb-12 leading-tight">
-            Book water sports and
+          <h1 className="text-5xl md:text-7xl font-bold mb-12 leading-tight text-white">
+            Book premium sailing
             <br />
-            marine activities
+            experiences
           </h1>
 
           {/* Search Bar */}
@@ -38,9 +38,9 @@ export function Hero() {
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="All activities and venues"
-                  value={searchData.activity}
-                  onChange={(e) => setSearchData({ ...searchData, activity: e.target.value })}
+                  placeholder="All sailing experiences"
+                  value={searchData.service}
+                  onChange={(e) => setSearchData({ ...searchData, service: e.target.value })}
                   className="search-input w-full pl-12"
                 />
               </div>
@@ -67,20 +67,6 @@ export function Hero() {
                 />
               </div>
 
-              <div className="relative">
-                <Clock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <select
-                  value={searchData.time}
-                  onChange={(e) => setSearchData({ ...searchData, time: e.target.value })}
-                  className="search-input w-full pl-12 appearance-none"
-                >
-                  <option value="">Any time</option>
-                  <option value="morning">Morning</option>
-                  <option value="afternoon">Afternoon</option>
-                  <option value="evening">Evening</option>
-                </select>
-              </div>
-
               <button onClick={handleSearch} className="btn-primary">
                 Search
               </button>
@@ -90,7 +76,7 @@ export function Hero() {
           {/* Stats */}
           <div className="mb-16">
             <div className="stats-number">
-              12,847 <span className="stats-text">activities booked today</span>
+              2,847 <span className="stats-text">sailing experiences booked today</span>
             </div>
           </div>
 

@@ -1,71 +1,179 @@
--- Insert experience data
+-- SQL Script: 03-seed-experiences.sql
+-- Description: Seeds initial data for the 'experiences' table,
+--              including diverse water activities.
+--              Assumes 'host_profiles' table already exists.
+--              Uses ON CONFLICT DO UPDATE to ensure idempotency.
 
-INSERT INTO experiences (captain_id, title, description, short_description, location, country, departure_marina, duration_hours, duration_display, max_guests, price_per_person, difficulty_level, category, included_amenities, what_to_bring, seasonal_availability, rating, total_reviews, total_bookings) VALUES
+INSERT INTO experiences (
+    id, host_id, title, description, short_description, location, specific_location, country,
+    activity_type, category, duration_hours, duration_display, max_guests, min_guests, price_per_person,
+    difficulty_level, rating, total_reviews, total_bookings, primary_image_url,
+    weather_contingency, included_amenities, what_to_bring, min_age, max_age,
+    activity_specific_details, tags, seasonal_availability, is_active
+) VALUES
+-- Sailing Experience (Host: Jean-Pierre Dubois)
+(
+    'e1a2b3c4-d5e6-7777-8888-999900000001',
+    (SELECT id FROM host_profiles WHERE name = 'Jean-Pierre Dubois'),
+    'Sunset Sailing in the French Riviera',
+    'A breathtaking sunset cruise along the Côte d''Azur. Enjoy complimentary local wines and appetizers as you soak in the stunning coastal views. Perfect for romantic evenings or a relaxing escape.',
+    'Experience the magic of the French Riviera at golden hour with wine and local delicacies.',
+    'Nice', 'Baie des Anges', 'France',
+    'sailing', ARRAY['luxury', 'relaxation', 'romantic'], 3, '3 hours', 12, 2, 120.00,
+    'all_levels', 4.8, 156, 200, '/placeholder.svg?height=400&width=600&text=French+Riviera+Sunset+Sailing',
+    'If weather is unsuitable, tour will be rescheduled or refunded.',
+    ARRAY['Wine & Appetizers', 'Professional Crew', 'Blankets', 'Safety equipment'],
+    ARRAY['Light jacket', 'Camera', 'Sunglasses'], 12, NULL,
+    '{
+        "vesselName": "Azure Dream",
+        "vesselType": "Luxury Catamaran",
+        "vesselCapacity": 12,
+        "itineraryHighlights": ["View of Promenade des Anglais", "Cap Ferrat sightseeing"]
+    }',
+    ARRAY['sailing', 'sunset', 'riviera', 'luxury', 'wine', 'france'],
+    ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], TRUE
+),
+-- Surfing Experience (Host: Chloe "Shaka" Smith)
+(
+    'e1a2b3c4-d5e6-7777-8888-999900000002',
+    (SELECT id FROM host_profiles WHERE name = 'Chloe "Shaka" Smith'),
+    'Beginner Surf Lessons at Bondi Beach',
+    'Our beginner-friendly surf lessons cover all the basics: ocean safety, paddling, popping up, and riding waves. All equipment provided. Guaranteed fun!',
+    'Catch your first wave at the iconic Bondi Beach with expert instructors.',
+    'Sydney', 'Bondi Beach', 'Australia',
+    'surfing', ARRAY['lesson', 'adventure', 'sports', 'beginner'], 2, '2 hours', 8, 1, 75.00,
+    'beginner', 4.9, 230, 300, '/placeholder.svg?height=400&width=600&text=Bondi+Beach+Surf+Lesson',
+    'Lessons proceed in light rain. Cancelled for storms/dangerous surf (reschedule/refund).',
+    ARRAY['Surfboard', 'Wetsuit', 'Rashguard', 'Sunscreen', 'Professional Instruction'],
+    ARRAY['Swimwear', 'Towel', 'Water bottle', 'Enthusiasm!'], 8, NULL,
+    '{
+        "boardTypesAvailable": ["Foamie", "Soft-top Longboard"],
+        "waveType": "Beach break",
+        "skillLevelFocus": ["beginner"]
+    }',
+    ARRAY['surfing', 'lessons', 'bondi', 'beginner', 'waves', 'australia'],
+    ARRAY['January', 'February', 'March', 'April', 'May', 'September', 'October', 'November', 'December'], TRUE
+),
+-- Kayaking Experience (Host: Mike "River" Thompson)
+(
+    'e1a2b3c4-d5e6-7777-8888-999900000003',
+    (SELECT id FROM host_profiles WHERE name = 'Mike "River" Thompson'),
+    'Sea Kayaking Emerald Cove Adventure',
+    'Join us for a guided sea kayaking tour in the stunning Clayoquot Sound. We''ll navigate through calm inlets, observe marine life like seals and eagles, and enjoy the tranquility of nature. No experience necessary.',
+    'Paddle through pristine waters, explore hidden coves, and spot local wildlife.',
+    'Vancouver Island', 'Clayoquot Sound', 'Canada',
+    'kayaking', ARRAY['eco_tour', 'adventure', 'wildlife', 'family_friendly'], 4, 'Half-day (4 hours)', 10, 2, 95.00,
+    'all_levels', 4.7, 180, 250, '/placeholder.svg?height=400&width=600&text=Clayoquot+Sound+Kayaking',
+    'Tours run rain or shine, unless conditions are unsafe (high winds/lightning). Reschedule/refund offered.',
+    ARRAY['Kayak', 'Paddle', 'PFD (Life Vest)', 'Dry Bag', 'Snacks', 'Guided Tour'],
+    ARRAY['Water-resistant clothing', 'Hat', 'Sunglasses', 'Water shoes', 'Binoculars (optional)'], 6, NULL,
+    '{
+        "kayakTypesAvailable": ["Single Touring Kayak", "Double Touring Kayak"],
+        "routeDescription": "Sheltered coastal route with potential wildlife sightings and old-growth forest views.",
+        "waterBodyType": "Coastal inlet"
+    }',
+    ARRAY['kayaking', 'eco-tour', 'wildlife', 'vancouver island', 'adventure', 'canada'],
+    ARRAY['May', 'June', 'July', 'August', 'September'], TRUE
+),
+-- Diving Experience (Host: Ahmed "DeepBlue" Hassan)
+(
+    'e1a2b3c4-d5e6-7777-8888-999900000004',
+    (SELECT id FROM host_profiles WHERE name = 'Ahmed "DeepBlue" Hassan'),
+    'Coral Reef Exploration Dive in the Red Sea',
+    'Embark on a boat trip to Ras Muhammad National Park for two guided dives at spectacular reef sites. Encounter colorful fish, intricate coral formations, and diverse marine life. Suitable for certified divers.',
+    'Discover the vibrant underwater world of the Red Sea''s famous coral reefs.',
+    'Sharm El Sheikh', 'Ras Muhammad National Park', 'Egypt',
+    'diving', ARRAY['adventure', 'eco_tour', 'sports', 'scuba'], 5, '2 Dives (approx. 5h total)', 12, 2, 110.00,
+    'intermediate', 4.9, 310, 400, '/placeholder.svg?height=400&width=600&text=Red+Sea+Diving',
+    'Dives are subject to sea conditions. Host may alter dive sites for safety. Reschedule/refund for cancellations.',
+    ARRAY['Dive Guide', 'Tanks & Weights', 'Lunch on boat', 'Park Fees', 'Refreshments'],
+    ARRAY['Dive certification card', 'Swimwear', 'Towel', 'Logbook', 'Sunscreen'], 15, NULL,
+    '{
+        "diveType": "Reef dive (boat)",
+        "maxDepthMeters": 25,
+        "certificationRequired": "Open Water Diver or equivalent",
+        "equipmentRentalAvailable": true
+    }',
+    ARRAY['diving', 'scuba', 'red sea', 'coral reef', 'marine life', 'egypt', 'boat dive'],
+    NULL, TRUE -- Year-round availability
+),
+-- Paddleboarding Experience (Host: Serena "Zen" Williams)
+(
+    'e1a2b3c4-d5e6-7777-8888-999900000005',
+    (SELECT id FROM host_profiles WHERE name = 'Serena "Zen" Williams'),
+    'Sunrise SUP Yoga on Lake Tahoe',
+    'Start your day with a peaceful paddle to a calm spot in Emerald Bay, followed by a rejuvenating yoga session on your board. All levels welcome, a perfect way to connect with nature and find your balance.',
+    'Greet the sunrise with a unique blend of paddleboarding and yoga on serene Lake Tahoe.',
+    'Lake Tahoe', 'Emerald Bay', 'USA',
+    'paddleboarding', ARRAY['relaxation', 'lesson', 'sports', 'wellness', 'yoga'], 1.5, '90 minutes', 10, 1, 65.00,
+    'all_levels', 4.8, 150, 220, '/placeholder.svg?height=400&width=600&text=Lake+Tahoe+SUP+Yoga',
+    'Cancelled for high winds or thunderstorms. Reschedule/refund offered.',
+    ARRAY['Paddleboard', 'Paddle', 'Anchor for yoga', 'Yoga Instruction', 'PFD (optional for yoga)'],
+    ARRAY['Comfortable activewear (quick-dry)', 'Water bottle', 'Sunscreen', 'Small towel'], 10, NULL,
+    '{
+        "boardTypesAvailable": ["Yoga SUP", "All-around SUP"],
+        "waterBodyType": "Calm lake bay",
+        "guidedTour": true,
+        "yogaStyle": "Hatha/Vinyasa Flow"
+    }',
+    ARRAY['paddleboarding', 'sup', 'yoga', 'lake tahoe', 'sunrise', 'wellness', 'mindfulness', 'usa'],
+    ARRAY['June', 'July', 'August', 'September'], TRUE
+),
+-- Another Sailing Experience (Host: Dimitris Papadopoulos)
+(
+    'e1a2b3c4-d5e6-7777-8888-999900000006',
+    (SELECT id FROM host_profiles WHERE name = 'Dimitris Papadopoulos'),
+    'Greek Island Hopping Adventure',
+    'Sail through the azure waters of the Aegean Sea, visiting iconic islands like Mykonos and hidden gems. Enjoy swimming, snorkeling, and authentic Greek cuisine onboard.',
+    'Discover the beauty of the Cyclades with stops at secluded beaches and traditional villages.',
+    'Santorini', 'Cyclades Islands Circuit', 'Greece',
+    'sailing', ARRAY['adventure', 'cultural', 'family_friendly', 'island_hopping'], 8, 'Full day (8 hours)', 10, 4, 180.00,
+    'all_levels', 4.9, 234, 350, '/placeholder.svg?height=400&width=600&text=Greek+Island+Hopping',
+    'Subject to Meltemi winds in summer. Itinerary may be adjusted for comfort and safety.',
+    ARRAY['Lunch & Drinks', 'Snorkeling Gear', 'Local Guide', 'Safety equipment'],
+    ARRAY['Swimwear', 'Sunscreen', 'Hat', 'Camera', 'Light sweater'], 5, NULL,
+    '{
+        "vesselName": "Aegean Spirit",
+        "vesselType": "Traditional Caique",
+        "vesselCapacity": 10,
+        "itineraryHighlights": ["Visit Red Beach (Santorini)", "Swim in Hot Springs (Palea Kameni)", "Explore Thirassia village", "Lunch at a secluded bay"]
+    }',
+    ARRAY['sailing', 'greek islands', 'cyclades', 'adventure', 'culture', 'boat trip', 'greece'],
+    ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], TRUE
+)
+ON CONFLICT (id) DO UPDATE SET
+    host_id = EXCLUDED.host_id,
+    title = EXCLUDED.title,
+    description = EXCLUDED.description,
+    short_description = EXCLUDED.short_description,
+    location = EXCLUDED.location,
+    specific_location = EXCLUDED.specific_location,
+    country = EXCLUDED.country,
+    activity_type = EXCLUDED.activity_type,
+    category = EXCLUDED.category,
+    duration_hours = EXCLUDED.duration_hours,
+    duration_display = EXCLUDED.duration_display,
+    max_guests = EXCLUDED.max_guests,
+    min_guests = EXCLUDED.min_guests,
+    price_per_person = EXCLUDED.price_per_person,
+    difficulty_level = EXCLUDED.difficulty_level,
+    rating = EXCLUDED.rating,
+    total_reviews = EXCLUDED.total_reviews,
+    total_bookings = EXCLUDED.total_bookings,
+    primary_image_url = EXCLUDED.primary_image_url,
+    weather_contingency = EXCLUDED.weather_contingency,
+    included_amenities = EXCLUDED.included_amenities,
+    what_to_bring = EXCLUDED.what_to_bring,
+    min_age = EXCLUDED.min_age,
+    max_age = EXCLUDED.max_age,
+    age_restriction_details = EXCLUDED.age_restriction_details,
+    activity_specific_details = EXCLUDED.activity_specific_details,
+    tags = EXCLUDED.tags,
+    seasonal_availability = EXCLUDED.seasonal_availability,
+    is_active = EXCLUDED.is_active,
+    updated_at = CURRENT_TIMESTAMP,
+    created_at = experiences.created_at
+;
 
--- UK Experiences (Captain James Morrison - Isle of Wight)
-(1, 'Solent Heritage Sailing Adventure', 'Discover the rich maritime history of the Solent while sailing past historic forts, royal yacht squadrons, and the birthplace of modern yachting. This comprehensive tour includes visits to Osborne House waters, the Royal Yacht Squadron, and stories of naval battles that shaped British history.', 'Explore the historic Solent waters with tales of royal yachts, naval battles, and maritime heritage', 'Cowes to Yarmouth', 'United Kingdom', 'Cowes Yacht Haven', 6, '6 hours', 8, 125.00, 'beginner', 'cultural', ARRAY['Traditional afternoon tea', 'Maritime history guide', 'Waterproof clothing', 'Safety equipment'], ARRAY['Comfortable shoes', 'Sun protection', 'Camera', 'Warm layers'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.9, 89, 156),
-
-(1, 'Isle of Wight Coastal Discovery', 'Circumnavigate the beautiful Isle of Wight, exploring dramatic chalk cliffs, secluded bays, and charming coastal villages. Experience the islands diverse landscapes from the unique perspective of the sea, with opportunities for swimming and coastal walks.', 'Full-day circumnavigation of the Isle of Wight with swimming stops and coastal exploration', 'Round Isle of Wight', 'United Kingdom', 'Cowes Yacht Haven', 8, 'Full day', 8, 185.00, 'intermediate', 'adventure', ARRAY['Lunch and refreshments', 'Swimming equipment', 'Coastal walking guide', 'Safety equipment'], ARRAY['Swimming gear', 'Walking boots', 'Weather protection', 'Camera'], ARRAY['May', 'June', 'July', 'August', 'September'], 4.8, 67, 134),
-
-(1, 'Sunset Racing Experience', 'Join the famous Cowes evening racing scene and experience the thrill of competitive sailing. Learn racing techniques, tactics, and boat handling while competing against other yachts in the historic waters where modern yacht racing was born.', 'Experience competitive yacht racing in the birthplace of the sport with expert instruction', 'Cowes Racing Circuit', 'United Kingdom', 'Cowes Yacht Haven', 4, '4 hours', 6, 95.00, 'advanced', 'adventure', ARRAY['Racing instruction', 'Competition entry', 'Celebration drinks', 'Safety equipment'], ARRAY['Non-slip shoes', 'Weather gear', 'Gloves', 'Competitive spirit'], ARRAY['April', 'May', 'June', 'July', 'August', 'September'], 4.9, 78, 145),
-
--- UK Experiences (Captain Sarah Williams - Scotland)
-(2, 'Highland Wildlife Safari', 'Explore the pristine waters around the Scottish Highlands in search of seals, dolphins, whales, and seabirds. Led by a marine biologist, this educational adventure combines wildlife watching with stunning Highland scenery and Gaelic cultural stories.', 'Marine biologist-led wildlife watching adventure through the stunning Scottish Highlands', 'Oban to Mull', 'United Kingdom', 'Oban Marina', 7, '7 hours', 12, 145.00, 'beginner', 'wildlife', ARRAY['Marine biologist guide', 'Wildlife identification charts', 'Binoculars', 'Hot soup and sandwiches', 'Waterproof clothing'], ARRAY['Warm clothing', 'Camera with zoom lens', 'Seasickness medication', 'Notebook'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.8, 156, 203),
-
-(2, 'Hebridean Island Hopping', 'Discover the mystical Inner Hebrides with visits to Iona, Staffa, and the Treshnish Isles. Experience ancient Celtic culture, dramatic basalt formations, and pristine wildlife habitats while learning about Scottish island life and traditions.', 'Multi-island adventure exploring Celtic heritage and dramatic landscapes of the Inner Hebrides', 'Inner Hebrides Circuit', 'United Kingdom', 'Oban Marina', 10, 'Full day', 12, 195.00, 'intermediate', 'cultural', ARRAY['Island landing fees', 'Cultural guide', 'Traditional Scottish lunch', 'Historical commentary', 'Transportation'], ARRAY['Sturdy walking shoes', 'Weather protection', 'Camera', 'Respect for sacred sites'], ARRAY['May', 'June', 'July', 'August', 'September'], 4.9, 134, 178),
-
-(2, 'Loch Katrine Whisky Trail', 'Combine sailing with Scotlands finest whisky traditions. Visit waterside distilleries, learn about whisky production, and enjoy tastings while sailing through some of Scotlands most beautiful lochs and landscapes.', 'Sailing and whisky tasting adventure through Scottish lochs with distillery visits', 'Loch Katrine Circuit', 'United Kingdom', 'Trossachs Pier', 8, '8 hours', 10, 165.00, 'beginner', 'culinary', ARRAY['Whisky tastings', 'Distillery tours', 'Traditional Scottish meal', 'Expert guide', 'Transportation'], ARRAY['Valid ID for alcohol', 'Designated driver arrangement', 'Warm clothing', 'Camera'], ARRAY['March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November'], 4.7, 98, 167),
-
--- UK Experiences (Captain Robert Thompson - Cornwall)
-(3, 'Cornish Smugglers Cove Adventure', 'Explore the hidden coves and secret beaches where Cornish smugglers once operated. Discover caves, hidden passages, and hear tales of moonless nights and contraband while enjoying traditional Cornish pasties and local cider.', 'Discover hidden smugglers coves and secret beaches with tales of Cornish maritime outlaws', 'St. Ives to Land''s End', 'United Kingdom', 'St. Ives Harbour', 5, '5 hours', 6, 115.00, 'beginner', 'cultural', ARRAY['Traditional Cornish pasties', 'Local cider tasting', 'Historical storytelling', 'Cave exploration', 'Safety equipment'], ARRAY['Non-slip shoes', 'Torch/flashlight', 'Weather protection', 'Sense of adventure'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.7, 123, 189),
-
-(3, 'Poldark Filming Locations Tour', 'Visit the dramatic filming locations of the popular Poldark series while learning about real Cornish mining history and coastal traditions. Explore the rugged coastline that provided the backdrop for this beloved historical drama.', 'Explore dramatic Poldark filming locations while learning about real Cornish history and culture', 'Cornish Mining Coast', 'United Kingdom', 'St. Ives Harbour', 6, '6 hours', 6, 135.00, 'beginner', 'cultural', ARRAY['Filming location guide', 'Historical commentary', 'Cornish cream tea', 'Photo opportunities', 'Transportation'], ARRAY['Camera', 'Comfortable walking shoes', 'Weather gear', 'Poldark enthusiasm'], ARRAY['March', 'April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.8, 145, 201),
-
-(3, 'Cornish Fishing Heritage Experience', 'Learn traditional Cornish fishing methods while sailing aboard an authentic lugger. Try your hand at traditional line fishing, crab potting, and learn about sustainable fishing practices that have fed Cornwall for centuries.', 'Hands-on traditional fishing experience aboard an authentic Cornish lugger', 'Cornish Fishing Grounds', 'United Kingdom', 'St. Ives Harbour', 7, '7 hours', 6, 155.00, 'intermediate', 'cultural', ARRAY['Fishing equipment', 'Traditional techniques instruction', 'Fresh seafood lunch', 'Cooking demonstration', 'Take-home catch'], ARRAY['Weather protection', 'Non-slip shoes', 'Appetite for fresh seafood', 'Patience for fishing'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.6, 167, 234),
-
--- UK Experiences (Captain Emma Davies - Wales)
-(4, 'Pembrokeshire Coastal Thrill Ride', 'Experience high-speed sailing along the dramatic Pembrokeshire coastline. Learn advanced sailing techniques while exploring sea caves, arches, and the stunning coastal scenery of Wales most beautiful national park.', 'High-performance sailing adventure along the dramatic Pembrokeshire coastline', 'Tenby to Caldey Island', 'United Kingdom', 'Tenby Harbour', 4, '4 hours', 6, 105.00, 'advanced', 'adventure', ARRAY['Performance sailing instruction', 'Safety equipment', 'Energy snacks', 'Adrenaline rush', 'Professional photos'], ARRAY['Athletic wear', 'Non-slip shoes', 'Sunglasses', 'Adventurous spirit'], ARRAY['April', 'May', 'June', 'July', 'August', 'September'], 4.9, 89, 134),
-
-(4, 'Welsh Dragon Racing Academy', 'Learn competitive sailing techniques in a fun, supportive environment. Perfect for those wanting to improve their sailing skills or try racing for the first time. Includes boat handling, tactics, and race strategy.', 'Learn competitive sailing and racing techniques with Olympic-level instruction', 'Carmarthen Bay', 'United Kingdom', 'Tenby Harbour', 6, '6 hours', 4, 145.00, 'intermediate', 'adventure', ARRAY['Olympic-level instruction', 'Racing yacht use', 'Technique analysis', 'Competition simulation', 'Certificate'], ARRAY['Athletic clothing', 'Sailing gloves', 'Water bottle', 'Determination'], ARRAY['May', 'June', 'July', 'August', 'September'], 4.8, 67, 98),
-
--- Mediterranean Experiences (Captain Marie Dubois - French Riviera)
-(5, 'Côte d''Azur Gourmet Sailing', 'Indulge in the finest Provençal cuisine while sailing the glamorous French Riviera. Visit exclusive beach clubs, enjoy wine tastings from local vineyards, and dine on freshly prepared Mediterranean specialties with stunning coastal views.', 'Luxury gourmet sailing experience with Provençal cuisine and wine along the French Riviera', 'Cannes to Antibes', 'France', 'Port Pierre Canto, Cannes', 8, '8 hours', 8, 340.00, 'beginner', 'culinary', ARRAY['Multi-course gourmet meal', 'Wine tasting', 'Sommelier guide', 'Beach club access', 'Cooking demonstration'], ARRAY['Smart casual attire', 'Sun protection', 'Camera', 'Appetite for luxury'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.9, 189, 267),
-
-(5, 'Secret Coves of Provence', 'Discover hidden beaches and secluded coves accessible only by boat. Swim in crystal-clear waters, explore underwater caves, and enjoy a picnic lunch prepared with local ingredients while anchored in paradise.', 'Explore hidden Mediterranean coves and secret beaches with gourmet picnic lunch', 'Cannes to Lérins Islands', 'France', 'Port Pierre Canto, Cannes', 6, '6 hours', 8, 280.00, 'beginner', 'adventure', ARRAY['Gourmet picnic lunch', 'Swimming equipment', 'Snorkeling gear', 'Beach towels', 'Underwater camera'], ARRAY['Swimwear', 'Sun protection', 'Waterproof bag', 'Sense of adventure'], ARRAY['May', 'June', 'July', 'August', 'September'], 4.8, 156, 234),
-
-(5, 'Monaco Glamour Experience', 'Sail to the legendary principality of Monaco and experience the epitome of Mediterranean luxury. Visit the famous Monte Carlo harbor, enjoy champagne while viewing super yachts, and learn about the history of this glamorous destination.', 'Luxury sailing experience to Monaco with champagne service and harbor tour', 'Cannes to Monaco', 'France', 'Port Pierre Canto, Cannes', 10, 'Full day', 8, 420.00, 'beginner', 'luxury', ARRAY['Champagne service', 'Monaco harbor tour', 'Luxury lunch', 'Professional photos', 'VIP treatment'], ARRAY['Elegant attire', 'Camera', 'Sunglasses', 'Passport/ID'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.9, 145, 198),
-
--- Mediterranean Experiences (Captain Marco Rossi - Italy)
-(6, 'Amalfi Coast Heritage Voyage', 'Explore the UNESCO World Heritage Amalfi Coast from the sea, visiting picturesque villages like Positano and Ravello. Learn about ancient maritime republics while enjoying traditional Italian cuisine and limoncello tastings.', 'UNESCO World Heritage sailing tour with traditional Italian cuisine and limoncello', 'Amalfi to Positano', 'Italy', 'Marina di Amalfi', 8, '8 hours', 10, 295.00, 'beginner', 'cultural', ARRAY['Traditional Italian lunch', 'Limoncello tasting', 'Historical guide', 'Village visits', 'Cultural immersion'], ARRAY['Comfortable walking shoes', 'Camera', 'Sun hat', 'Respect for local customs'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.8, 234, 312),
-
-(6, 'Capri Blue Grotto Adventure', 'Visit the famous Blue Grotto and explore the legendary island of Capri. Swim in hidden coves, visit the Faraglioni rocks, and enjoy fresh seafood while learning about the islands rich history from Roman times to modern glamour.', 'Explore legendary Capri island including the famous Blue Grotto with seafood lunch', 'Amalfi to Capri', 'Italy', 'Marina di Amalfi', 9, '9 hours', 10, 350.00, 'beginner', 'adventure', ARRAY['Blue Grotto entrance', 'Fresh seafood lunch', 'Swimming stops', 'Island exploration', 'Professional guide'], ARRAY['Swimwear', 'Comfortable shoes', 'Camera', 'Cash for grotto entrance'], ARRAY['April', 'May', 'June', 'July', 'August', 'September'], 4.7, 198, 276),
-
-(6, 'Cinque Terre Coastal Discovery', 'Sail along the dramatic Cinque Terre coastline, visiting the five famous villages perched on clifftops. Enjoy hiking opportunities, local wine tastings, and traditional Ligurian cuisine while exploring this UNESCO site.', 'Discover the five villages of Cinque Terre with hiking, wine tasting, and local cuisine', 'La Spezia to Monterosso', 'Italy', 'Porto Mirabello, La Spezia', 10, 'Full day', 10, 385.00, 'intermediate', 'cultural', ARRAY['Village visits', 'Wine tasting', 'Traditional lunch', 'Hiking guide', 'Train tickets'], ARRAY['Hiking shoes', 'Backpack', 'Water bottle', 'Camera', 'Energy for walking'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.9, 167, 245),
-
--- Mediterranean Experiences (Captain Nikos Papadopoulos - Greece)
-(7, 'Santorini Sunset Wine Odyssey', 'Experience the worlds most famous sunset while sailing around Santorini. Visit volcanic beaches, explore ancient ruins, and enjoy wine tastings from local vineyards while learning about the islands volcanic history.', 'Iconic Santorini sunset sailing with volcanic wine tasting and ancient history', 'Santorini Caldera Circuit', 'Greece', 'Vlychada Marina', 6, '6 hours', 12, 189.00, 'beginner', 'cultural', ARRAY['Wine tasting', 'Sunset viewing', 'Traditional Greek meal', 'Volcanic tour', 'Swimming stops'], ARRAY['Camera', 'Swimwear', 'Sun protection', 'Comfortable shoes'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.9, 145, 198),
-
-(7, 'Cycladic Island Hopping', 'Explore multiple Cycladic islands in one unforgettable day. Visit Mykonos, Delos, and smaller islands while learning about ancient Greek civilization, mythology, and modern island life. Includes archaeological site visits and traditional meals.', 'Multi-island adventure exploring ancient Greek sites and traditional Cycladic culture', 'Mykonos to Delos Circuit', 'Greece', 'Mykonos New Port', 9, '9 hours', 12, 245.00, 'beginner', 'cultural', ARRAY['Archaeological site visits', 'Traditional Greek lunch', 'Island transfers', 'Cultural guide', 'Museum entries'], ARRAY['Comfortable walking shoes', 'Hat and sunscreen', 'Camera', 'Respect for ancient sites'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.8, 123, 167),
-
-(7, 'Aegean Diving Adventure', 'Combine sailing with world-class diving in the crystal-clear Aegean Sea. Explore underwater volcanic formations, ancient shipwrecks, and vibrant marine life with a certified dive master and marine biologist.', 'Sailing and diving adventure exploring underwater volcanic formations and marine life', 'Santorini Diving Sites', 'Greece', 'Vlychada Marina', 7, '7 hours', 8, 165.00, 'intermediate', 'adventure', ARRAY['Diving equipment', 'Dive master guide', 'Marine life identification', 'Underwater photos', 'Light lunch'], ARRAY['Diving certification', 'Swimwear', 'Towel', 'Underwater camera'], ARRAY['May', 'June', 'July', 'August', 'September', 'October'], 4.7, 89, 134),
-
--- Northern European Experiences (Captain Lars Andersen - Norway)
-(8, 'Midnight Sun Arctic Sailing', 'Experience the magical midnight sun while sailing through the dramatic Lofoten Islands. Witness 24-hour daylight, dramatic peaks rising from the sea, and traditional fishing villages in this unique Arctic adventure.', 'Magical midnight sun sailing through dramatic Lofoten Islands with 24-hour daylight', 'Lofoten Islands Circuit', 'Norway', 'Svolvær Harbor', 12, '12 hours', 8, 295.00, 'intermediate', 'adventure', ARRAY['Midnight sun experience', 'Arctic wildlife viewing', 'Traditional Norwegian meal', 'Photography guidance', 'Warm clothing'], ARRAY['Warm layers', 'Sunglasses', 'Camera', 'Sense of wonder'], ARRAY['May', 'June', 'July', 'August'], 4.8, 98, 145),
-
-(8, 'Northern Lights Sailing Expedition', 'Chase the Aurora Borealis from the deck of a sailing yacht. This winter adventure combines the thrill of Arctic sailing with the magic of the Northern Lights, including hot drinks and traditional Norwegian storytelling.', 'Winter sailing expedition to witness the Northern Lights with traditional storytelling', 'Arctic Circle Waters', 'Norway', 'Svolvær Harbor', 8, '8 hours', 8, 245.00, 'advanced', 'adventure', ARRAY['Northern Lights viewing', 'Hot drinks and soup', 'Warm clothing rental', 'Photography tips', 'Traditional stories'], ARRAY['Very warm clothing', 'Camera with tripod', 'Patience', 'Sense of adventure'], ARRAY['October', 'November', 'December', 'January', 'February', 'March'], 4.9, 67, 89),
-
-(8, 'Fjord Wildlife Safari', 'Explore pristine Norwegian fjords in search of whales, seals, and seabirds. Learn about Arctic ecosystems while sailing through some of the worlds most dramatic landscapes with an expert naturalist guide.', 'Arctic wildlife safari through pristine Norwegian fjords with naturalist guide', 'Trollfjord and Surroundings', 'Norway', 'Svolvær Harbor', 10, '10 hours', 8, 275.00, 'beginner', 'wildlife', ARRAY['Wildlife expert guide', 'Binoculars', 'Wildlife identification charts', 'Hot meal', 'Photography assistance'], ARRAY['Warm clothing', 'Camera with zoom', 'Binoculars', 'Patience for wildlife'], ARRAY['April', 'May', 'June', 'July', 'August', 'September'], 4.7, 134, 176),
-
--- Northern European Experiences (Captain Hans Mueller - Germany)
-(9, 'Baltic Sea Tall Ship Adventure', 'Sail aboard a traditional tall ship and learn historic seamanship techniques. Participate in setting sails, navigation, and maritime traditions while exploring the beautiful Baltic coastline and historic Hanseatic ports.', 'Traditional tall ship sailing with historic seamanship training along the Baltic coast', 'Kiel to Lübeck', 'Germany', 'Kiel Marina', 8, '8 hours', 16, 145.00, 'intermediate', 'cultural', ARRAY['Tall ship experience', 'Seamanship training', 'Traditional maritime meal', 'Historical commentary', 'Participation certificates'], ARRAY['Non-slip shoes', 'Weather gear', 'Gloves', 'Sense of adventure'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.7, 123, 176),
-
-(9, 'Hanseatic League Heritage Tour', 'Explore the historic trading ports of the Hanseatic League while learning about medieval maritime commerce. Visit UNESCO World Heritage sites and experience the rich cultural heritage of Northern European trading cities.', 'Historical sailing tour exploring Hanseatic League ports and medieval maritime heritage', 'Baltic Hanseatic Ports', 'Germany', 'Kiel Marina', 10, '10 hours', 16, 185.00, 'beginner', 'cultural', ARRAY['UNESCO site visits', 'Historical guide', 'Traditional German meal', 'Museum entries', 'Cultural immersion'], ARRAY['Comfortable walking shoes', 'Camera', 'Interest in history', 'Weather protection'], ARRAY['May', 'June', 'July', 'August', 'September'], 4.8, 145, 198),
-
-(9, 'Wadden Sea Ecology Expedition', 'Discover the unique ecosystem of the Wadden Sea UNESCO World Heritage site. Learn about tidal flats, migratory birds, and marine conservation while sailing through this remarkable natural environment.', 'Educational sailing expedition through Wadden Sea UNESCO site with ecology focus', 'Wadden Sea National Park', 'Germany', 'Kiel Marina', 7, '7 hours', 12, 125.00, 'beginner', 'wildlife', ARRAY['Ecology expert guide', 'Binoculars', 'Educational materials', 'Light lunch', 'Conservation information'], ARRAY['Weather protection', 'Binoculars', 'Notebook', 'Interest in nature'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.6, 167, 234),
-
--- Northern European Experiences (Captain Pieter van der Berg - Netherlands)
-(10, 'Dutch Maritime Innovation Tour', 'Explore cutting-edge sustainable sailing technologies while touring the historic Dutch waterways. Learn about wind power, sustainable design, and the Netherlands innovative approach to living with water.', 'Innovative sailing experience showcasing Dutch maritime technology and sustainability', 'Amsterdam Canals to IJsselmeer', 'Netherlands', 'Amsterdam Marina', 6, '6 hours', 10, 135.00, 'beginner', 'cultural', ARRAY['Technology demonstrations', 'Sustainability education', 'Dutch cheese and beer', 'Innovation tour', 'Expert commentary'], ARRAY['Interest in technology', 'Camera', 'Weather gear', 'Open mind'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.8, 134, 167),
-
-(10, 'Tulip Season Canal Cruise', 'Experience the Netherlands during tulip season while sailing through historic canals and visiting famous flower fields. Combine maritime heritage with the countrys most beautiful natural spectacle.', 'Springtime sailing tour combining Dutch canals with famous tulip fields', 'Amsterdam to Keukenhof Region', 'Netherlands', 'Amsterdam Marina', 8, '8 hours', 10, 165.00, 'beginner', 'cultural', ARRAY['Tulip field visits', 'Traditional Dutch lunch', 'Flower garden entries', 'Photography opportunities', 'Cultural guide'], ARRAY['Camera', 'Comfortable shoes', 'Weather protection', 'Appreciation for flowers'], ARRAY['March', 'April', 'May'], 4.9, 189, 234),
-
-(10, 'Windmill and Waterway Heritage', 'Discover the ingenious Dutch relationship with water while sailing past historic windmills and through traditional polders. Learn about water management, engineering marvels, and Dutch maritime culture.', 'Cultural sailing tour exploring Dutch water management and windmill heritage', 'Kinderdijk to Zaanse Schans', 'Netherlands', 'Amsterdam Marina', 7, '7 hours', 10, 145.00, 'beginner', 'cultural', ARRAY['Windmill visits', 'Water management tour', 'Traditional Dutch meal', 'Engineering explanations', 'Cultural immersion'], ARRAY['Comfortable walking shoes', 'Camera', 'Interest in engineering', 'Weather gear'], ARRAY['April', 'May', 'June', 'July', 'August', 'September', 'October'], 4.7, 156, 201);
+INSERT INTO schema_migrations (version) VALUES ('03-seed-experiences-' || TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISSMS'))
+ON CONFLICT (version) DO NOTHING;

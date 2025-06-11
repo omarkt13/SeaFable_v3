@@ -1,30 +1,43 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
+import { securityHeaders, corsHeaders } from "@/lib/security"
 
 export function middleware(request: NextRequest) {
-  // Simple middleware without JWT dependencies
-  const { pathname } = request.nextUrl
+  // Create response
+  const response = NextResponse.next()
 
-  // Allow public routes
-  const publicRoutes = ["/", "/experiences", "/about", "/contact", "/login", "/register", "/business/login"]
+  // Add security headers to all responses
+  Object.entries({ ...securityHeaders, ...corsHeaders }).forEach(([key, value]) => {
+    response.headers.set(key, value)
+  })
 
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
-    return NextResponse.next()
+  // Handle CORS preflight requests
+  if (request.method === "OPTIONS") {
+    return new NextResponse(null, {
+      status: 200,
+      headers: corsHeaders,
+    })
   }
 
-  // For demo purposes, allow all routes
-  return NextResponse.next()
+  // Block requests with suspicious patterns
+  const url = request.nextUrl.pathname
+  const suspiciousPatterns = [/\.php$/, /\.asp$/, /\.jsp$/, /wp-admin/, /wp-login/, /admin\.php/, /phpmyadmin/]
+
+  if (suspiciousPatterns.some((pattern) => pattern.test(url))) {
+    return new NextResponse("Not Found", { status: 404 })
+  }
+
+  return response
 }
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 }

@@ -1,103 +1,149 @@
 "use client"
-
-import type React from "react"
-
-import { useState, useEffect, useCallback } from "react"
-import { SearchFilters } from "@/components/search/search-filters"
+import { useState, useEffect, useCallback, useMemo } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
+import { SearchFilters, type ActiveFilters } from "@/components/search/search-filters"
 import { ExperienceCard } from "@/components/search/experience-card"
-import { SearchHeader } from "@/components/search/search-header"
-import { Loader2 } from "lucide-react"
+import { SearchHeader } from "@/components/search/search-header" // Assuming this is a generic header
+import { Loader2, AlertTriangle, Info } from "lucide-react"
+import type { Experience, ActivityType } from "@/types"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-interface Experience {
-  id: number
-  title: string
-  location: string
-  primary_image: string
-  price_per_person: number
-  duration_display: string
-  rating: number
-  total_reviews: number
-  captain_name: string
-  captain_avatar: string
-  captain_rating: number
-  captain_specialties: string[]
-  short_description: string
-  vessel_type: string
-  max_guests: number
-}
+const ITEMS_PER_PAGE = 9
 
 export default function SearchPage() {
-  const [experiences, setExperiences] = useState<Experience[]>([])
+  const router = useRouter()
+  const searchParamsHook = useSearchParams()
+
+  const [allExperiences, setAllExperiences] = useState<Experience[]>([])
+  const [filteredExperiences, setFilteredExperiences] = useState<Experience[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState("recommended")
+  const [currentPage, setCurrentPage] = useState(1)
 
-  // Use useCallback to stabilize the fetch function
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
+    priceRange: [0, 500],
+    activityTypes: (searchParamsHook.get("activityType")?.split(",") as ActivityType[]) || [],
+    categories: [],
+    difficulties: [],
+    durations: [],
+  })
+
+  const initialSearchTerm = searchParamsHook.get("location") || "" // Or a general search term
+
   const fetchExperiences = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch("/api/experiences?limit=20")
+      // Construct query params for the API based on initial search or all data
+      const apiQuery = new URLSearchParams()
+      if (initialSearchTerm) apiQuery.set("searchTerm", initialSearchTerm)
+      // Fetch a larger set initially if possible, or rely on frontend filtering for this mock setup
+      apiQuery.set("limit", "50") // Fetch more to allow for frontend filtering
+
+      const response = await fetch(`/api/experiences?${apiQuery.toString()}`)
       const result = await response.json()
 
       if (result.success) {
-        setExperiences(result.data)
+        setAllExperiences(result.data)
       } else {
-        setError("Failed to load experiences")
+        setError("Failed to load experiences. Please try again later.")
       }
     } catch (err) {
-      setError("Failed to load experiences")
+      setError("An error occurred while fetching experiences. Please check your connection.")
       console.error("Error fetching experiences:", err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [initialSearchTerm])
 
-  // Only fetch on initial mount
   useEffect(() => {
     fetchExperiences()
   }, [fetchExperiences])
 
-  // Handle sort change with useCallback
-  const handleSortChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSortBy(e.target.value)
+  const applyFiltersAndSort = useCallback(() => {
+    let experiencesToProcess = [...allExperiences]
+
+    // Apply filters
+    experiencesToProcess = experiencesToProcess.filter((exp) => {
+      const priceMatch =
+        exp.pricePerPerson >= activeFilters.priceRange[0] && exp.pricePerPerson <= activeFilters.priceRange[1]
+      const activityTypeMatch =
+        activeFilters.activityTypes.length === 0 || activeFilters.activityTypes.includes(exp.activityType)
+      const categoryMatch =
+        activeFilters.categories.length === 0 || activeFilters.categories.some((cat) => exp.category.includes(cat))
+      const difficultyMatch =
+        activeFilters.difficulties.length === 0 || activeFilters.difficulties.includes(exp.difficultyLevel)
+      // Duration filter needs mapping from string (e.g., "2-4 hours") to exp.durationHours
+      const durationMatch =
+        activeFilters.durations.length === 0 ||
+        activeFilters.durations.some((dRange) => {
+          if (dRange === "0-2 hours") return exp.durationHours <= 2
+          if (dRange === "2-4 hours") return exp.durationHours > 2 && exp.durationHours <= 4
+          if (dRange === "4-6 hours") return exp.durationHours > 4 && exp.durationHours <= 6
+          if (dRange === "6+ hours") return exp.durationHours > 6
+          if (dRange === "full-day") return exp.durationHours >= 7 && exp.durationHours <= 9 // Example for full-day
+          if (dRange === "multi-day") return exp.durationHours > 24
+          return true
+        })
+
+      return priceMatch && activityTypeMatch && categoryMatch && difficultyMatch && durationMatch
+    })
+
+    // Apply sorting
+    switch (sortBy) {
+      case "price-low":
+        experiencesToProcess.sort((a, b) => a.pricePerPerson - b.pricePerPerson)
+        break
+      case "price-high":
+        experiencesToProcess.sort((a, b) => b.pricePerPerson - a.pricePerPerson)
+        break
+      case "rating":
+        experiencesToProcess.sort((a, b) => b.rating - a.rating)
+        break
+      case "duration-short":
+        experiencesToProcess.sort((a, b) => a.durationHours - b.durationHours)
+        break
+      case "duration-long":
+        experiencesToProcess.sort((a, b) => b.durationHours - a.durationHours)
+        break
+      case "recommended": // Placeholder for more complex recommendation logic
+      default:
+        experiencesToProcess.sort((a, b) => (b.totalBookings || 0) - (a.totalBookings || 0) || b.rating - a.rating)
+        break
+    }
+    setFilteredExperiences(experiencesToProcess)
+    setCurrentPage(1) // Reset to first page on filter/sort change
+  }, [allExperiences, activeFilters, sortBy])
+
+  useEffect(() => {
+    applyFiltersAndSort()
+  }, [applyFiltersAndSort])
+
+  const handleFilterChange = useCallback((newFilters: ActiveFilters) => {
+    setActiveFilters(newFilters)
   }, [])
 
-  // Transform data to match ExperienceCard expectations
-  const transformedExperiences = experiences.map((exp) => ({
-    ...exp,
-    image: exp.primary_image || "/placeholder.svg?height=400&width=600",
-    price: exp.price_per_person,
-    duration: exp.duration_display,
-    reviews: exp.total_reviews,
-    captain: {
-      name: exp.captain_name || "Captain",
-      avatar: exp.captain_avatar || "/placeholder.svg?height=60&width=60",
-      rating: exp.captain_rating || 4.5,
-      specialties: exp.captain_specialties || [],
-    },
-    route: exp.short_description || "",
-    weather: {
-      temperature: 24,
-      condition: "sunny" as const,
-      windSpeed: 12,
-      windDirection: "NE",
-      waveHeight: 0.5,
-      rainChance: 10,
-    },
-    // Explicitly set tags with a fallback
-    tags: exp.captain_specialties || [],
-    vessel: exp.vessel_type || "Sailing Yacht",
-    maxGuests: exp.max_guests || 8,
-  }))
+  const paginatedResults = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+    return filteredExperiences.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+  }, [filteredExperiences, currentPage])
+
+  const totalPages = Math.ceil(filteredExperiences.length / ITEMS_PER_PAGE)
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <SearchHeader />
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <SearchHeader
+          initialSearchTerm={initialSearchTerm}
+          onSearch={() => {
+            /* Allow header to trigger search/filter */
+          }}
+        />
+        <div className="max-w-screen-xl mx-auto px-4 py-8">
           <div className="flex justify-center items-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
-            <span className="ml-2 text-gray-600">Loading experiences...</span>
+            <Loader2 className="h-10 w-10 animate-spin text-teal-600" />
+            <span className="ml-3 text-xl text-gray-600">Loading adventures...</span>
           </div>
         </div>
       </div>
@@ -107,10 +153,15 @@ export default function SearchPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <SearchHeader />
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="text-center py-20">
-            <p className="text-red-600">{error}</p>
+        <SearchHeader initialSearchTerm={initialSearchTerm} onSearch={() => {}} />
+        <div className="max-w-screen-xl mx-auto px-4 py-8">
+          <div className="text-center py-20 bg-red-50 p-8 rounded-lg shadow">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-semibold text-red-700 mb-2">Oops! Something went wrong.</h2>
+            <p className="text-red-600 mb-6">{error}</p>
+            <Button onClick={fetchExperiences} className="bg-red-600 hover:bg-red-700">
+              Try Again
+            </Button>
           </div>
         </div>
       </div>
@@ -118,52 +169,89 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <SearchHeader />
+    <div className="min-h-screen bg-gray-100">
+      <SearchHeader
+        initialSearchTerm={initialSearchTerm}
+        onSearch={(term) => {
+          // This could update a global search term that then refetches or filters
+          // For now, assuming SearchHeader is mostly for display or simple term input
+          router.push(`/search?location=${term}`) // Basic example
+        }}
+      />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filters Sidebar */}
-          <div className="lg:w-1/4">
-            <SearchFilters />
-          </div>
+          <aside className="lg:w-1/4 xl:w-1/5">
+            <SearchFilters onFilterChange={handleFilterChange} initialFilters={activeFilters} />
+          </aside>
 
           {/* Results */}
-          <div className="lg:w-3/4">
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-4">
+          <main className="lg:w-3/4 xl:w-4/5">
+            <div className="mb-6 p-4 bg-white rounded-lg shadow">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-navy-800 mb-2">Sailing Experiences</h1>
-                  <p className="text-gray-600">{experiences.length} experiences found • Perfect weather conditions</p>
+                  <h1 className="text-2xl font-bold text-navy-800">
+                    {initialSearchTerm ? `Results for "${initialSearchTerm}"` : "Water Activities"}
+                  </h1>
+                  <p className="text-gray-600 text-sm">
+                    {filteredExperiences.length} experience{filteredExperiences.length !== 1 ? "s" : ""} found
+                  </p>
                 </div>
 
-                <select
-                  value={sortBy}
-                  onChange={handleSortChange}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                >
-                  <option value="recommended">Recommended</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="rating">Highest Rated</option>
-                  <option value="duration">Duration</option>
-                </select>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-full sm:w-auto min-w-[180px] bg-white border-gray-300">
+                    <SelectValue placeholder="Sort by..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recommended">Recommended</SelectItem>
+                    <SelectItem value="price-low">Price: Low to High</SelectItem>
+                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    <SelectItem value="rating">Highest Rated</SelectItem>
+                    <SelectItem value="duration-short">Duration: Shortest</SelectItem>
+                    <SelectItem value="duration-long">Duration: Longest</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            <div className="space-y-6">
-              {transformedExperiences.map((experience) => (
-                <ExperienceCard key={experience.id} experience={experience} />
-              ))}
-            </div>
+            {paginatedResults.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {paginatedResults.map((experience) => (
+                  <ExperienceCard key={experience.id} experience={experience} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-white rounded-lg shadow">
+                <Info className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Experiences Found</h3>
+                <p className="text-gray-500">Try adjusting your filters or searching for a different location.</p>
+              </div>
+            )}
 
-            {/* Load More */}
-            <div className="text-center mt-12">
-              <button className="bg-gradient-to-r from-teal-600 to-blue-green-600 hover:from-teal-700 hover:to-blue-green-700 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200">
-                Load More Experiences
-              </button>
-            </div>
-          </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-10 flex justify-center items-center space-x-2">
+                <Button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  variant="outline"
+                >
+                  Previous
+                </Button>
+                <span className="text-gray-700">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  variant="outline"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </main>
         </div>
       </div>
     </div>

@@ -1,34 +1,57 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { signInUser } from "@/lib/auth-utils"
+import { loginSchema } from "@/lib/validations"
+import { validateRequest } from "@/lib/middleware"
+import { withRateLimit, authRateLimiter } from "@/lib/rate-limiter"
+import { withSecurity } from "@/lib/security"
+import { withLogging, logger } from "@/lib/logger"
 
-export async function POST(request: NextRequest) {
+async function loginHandler(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, password } = body
 
-    // Simple demo authentication
-    if (email === "demo@seafable.com" && password === "password123") {
-      const user = {
-        id: "demo-user-1",
-        email: "demo@seafable.com",
-        firstName: "Demo",
-        lastName: "User",
-        role: "customer",
-        emailVerified: true,
-        createdAt: "2024-01-01T00:00:00Z",
-        lastLoginAt: new Date().toISOString(),
-      }
-
-      return NextResponse.json({
-        success: true,
-        user,
-        token: "demo-token-123",
-        refreshToken: "demo-refresh-123",
+    // Validate request data
+    const validation = validateRequest(loginSchema, body)
+    if (!validation.success) {
+      logger.logSecurityEvent("Invalid login data", {
+        error: validation.error,
+        ip: request.ip,
       })
+      return NextResponse.json({ success: false, error: validation.error }, { status: 400 })
     }
 
-    return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
+    const { email, password } = validation.data
+
+    logger.logAuthEvent("Login attempt", undefined, { email })
+
+    // Sign in the user
+    const result = await signInUser(email, password)
+
+    if (!result.success) {
+      logger.logAuthEvent("Login failed", undefined, {
+        email,
+        error: result.error,
+        ip: request.ip,
+      })
+      return NextResponse.json({ success: false, error: result.error }, { status: 401 })
+    }
+
+    logger.logAuthEvent("Login successful", result.user?.id, { email })
+
+    return NextResponse.json({
+      success: true,
+      user: result.user,
+      session: result.session,
+    })
   } catch (error) {
-    console.error("Login error:", error)
+    logger.logError(error as Error, {
+      endpoint: "login",
+      ip: request.ip,
+    })
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
+}
+
+export async function POST(request: NextRequest) {
+  return withRateLimit(request, authRateLimiter, () => withSecurity(withLogging(loginHandler))(request))
 }

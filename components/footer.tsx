@@ -1,92 +1,69 @@
 import Link from "next/link"
+import { Anchor, Mail, Phone, MapPin } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="bg-gray-900 text-white py-12">
-      <div className="container">
+    <footer className="bg-gray-900 text-white">
+      <div className="container py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-xl font-bold mb-4">seafable</h3>
-            <p className="text-gray-400 text-sm">
-              Book premium water sports and marine activities with trusted providers worldwide.
-            </p>
+            <div className="flex items-center space-x-2 mb-4">
+              <Anchor className="h-6 w-6" />
+              <span className="text-lg font-bold">SeaFable</span>
+            </div>
+            <p className="text-gray-400">Premium sailing experiences with expert captains worldwide.</p>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Activities</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li>
-                <Link href="/activities?category=sailing" className="hover:text-white">
-                  Sailing
-                </Link>
-              </li>
-              <li>
-                <Link href="/activities?category=diving" className="hover:text-white">
-                  Diving
-                </Link>
-              </li>
-              <li>
-                <Link href="/activities?category=fishing" className="hover:text-white">
-                  Fishing
-                </Link>
-              </li>
-              <li>
-                <Link href="/activities?category=watersports" className="hover:text-white">
-                  Water Sports
-                </Link>
-              </li>
-            </ul>
+            <h3 className="font-semibold mb-4">Quick Links</h3>
+            <div className="space-y-2">
+              <Link href="/experiences" className="block text-gray-400 hover:text-white">
+                Experiences
+              </Link>
+              <Link href="/about" className="block text-gray-400 hover:text-white">
+                About
+              </Link>
+              <Link href="/contact" className="block text-gray-400 hover:text-white">
+                Contact
+              </Link>
+            </div>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Company</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li>
-                <Link href="/about" className="hover:text-white">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link href="/help" className="hover:text-white">
-                  Help Center
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="hover:text-white">
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link href="/careers" className="hover:text-white">
-                  Careers
-                </Link>
-              </li>
-            </ul>
+            <h3 className="font-semibold mb-4">Contact</h3>
+            <div className="space-y-2 text-gray-400">
+              <div className="flex items-center space-x-2">
+                <Mail className="h-4 w-4" />
+                <span>hello@SeaFable.com</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Phone className="h-4 w-4" />
+                <span>+1 (555) 123-4567</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <MapPin className="h-4 w-4" />
+                <span>Mediterranean Coast</span>
+              </div>
+            </div>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Partners</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              <li>
-                <Link href="/list-business" className="hover:text-white">
-                  List your business
-                </Link>
-              </li>
-              <li>
-                <Link href="/partner-portal" className="hover:text-white">
-                  Partner portal
-                </Link>
-              </li>
-              <li>
-                <Link href="/api" className="hover:text-white">
-                  API
-                </Link>
-              </li>
-            </ul>
+            <h3 className="font-semibold mb-4">Follow Us</h3>
+            <div className="space-y-2 text-gray-400">
+              <a href="#" className="block hover:text-white">
+                Instagram
+              </a>
+              <a href="#" className="block hover:text-white">
+                Facebook
+              </a>
+              <a href="#" className="block hover:text-white">
+                Twitter
+              </a>
+            </div>
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
+        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
           <p>&copy; 2024 SeaFable. All rights reserved.</p>
         </div>
       </div>

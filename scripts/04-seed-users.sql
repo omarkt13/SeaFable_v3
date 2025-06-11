@@ -1,27 +1,100 @@
--- Insert user data
+-- SQL Script: 04-seed-users.sql
+-- Description: Seeds initial data for the 'users' table.
+--              Includes both regular users and users linked to host profiles.
+--              Uses ON CONFLICT DO UPDATE to ensure idempotency.
 
-INSERT INTO users (first_name, last_name, email, phone, avatar_url, date_of_birth, nationality, emergency_contact_name, emergency_contact_phone, sailing_experience, dietary_restrictions, accessibility_needs) VALUES
+-- Note: The password_hash is a bcrypt hash for 'password123'.
+-- In a real application, these would be generated securely during user registration.
 
-('Emma', 'Johnson', 'emma.johnson@email.com', '+44 7700 900001', '/placeholder.svg?height=100&width=100', '1985-03-15', 'British', 'David Johnson', '+44 7700 900002', 'beginner', ARRAY['vegetarian'], ARRAY[]::text[]),
+INSERT INTO users (id, first_name, last_name, email, password_hash, avatar_url, role) VALUES
+('u1a2b3c4-d5e6-7777-8888-999900000001', 'Emma', 'Johnson', 'emma.johnson@seafable.com', '$2a$10$XdUECj9QLpYwU.zVjKS4XOgwU6OjVtYzXZOtDc18D/enp7QJj3cJi', '/placeholder.svg?height=100&width=100&text=EJ', 'user')
+ON CONFLICT (id) DO UPDATE SET
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    email = EXCLUDED.email,
+    password_hash = EXCLUDED.password_hash,
+    avatar_url = EXCLUDED.avatar_url,
+    role = EXCLUDED.role,
+    updated_at = CURRENT_TIMESTAMP,
+    created_at = users.created_at
+,
+('u1a2b3c4-d5e6-7777-8888-999900000002', 'Michael', 'Chen', 'michael.chen@seafable.com', '$2a$10$XdUECj9QLpYwU.zVjKS4XOgwU6OjVtYzXZOtDc18D/enp7QJj3cJi', '/placeholder.svg?height=100&width=100&text=MC', 'user')
+ON CONFLICT (id) DO UPDATE SET
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    email = EXCLUDED.email,
+    password_hash = EXCLUDED.password_hash,
+    avatar_url = EXCLUDED.avatar_url,
+    role = EXCLUDED.role,
+    updated_at = CURRENT_TIMESTAMP,
+    created_at = users.created_at
+,
+('u1a2b3c4-d5e6-7777-8888-999900000003', 'Sophie', 'Dubois', 'sophie.dubois@seafable.com', '$2a$10$XdUECj9QLpYwU.zVjKS4XOgwU6OjVtYzXZOtDc18D/enp7QJj3cJi', '/placeholder.svg?height=100&width=100&text=SD', 'user')
+ON CONFLICT (id) DO UPDATE SET
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    email = EXCLUDED.email,
+    password_hash = EXCLUDED.password_hash,
+    avatar_url = EXCLUDED.avatar_url,
+    role = EXCLUDED.role,
+    updated_at = CURRENT_TIMESTAMP,
+    created_at = users.created_at
+,
+-- Users linked to Host Profiles
+('captain.james@seafable.com', 'James', 'Morrison', 'captain.james@seafable.com', '$2a$10$XdUECj9QLpYwU.zVjKS4XOgwU6OjVtYzXZOtDc18D/enp7QJj3cJi', '/placeholder.svg?height=100&width=100&text=JM', 'host')
+ON CONFLICT (email) DO UPDATE SET
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    password_hash = EXCLUDED.password_hash,
+    avatar_url = EXCLUDED.avatar_url,
+    role = EXCLUDED.role,
+    updated_at = CURRENT_TIMESTAMP
+,
+('captain.sarah@seafable.com', 'Sarah', 'Williams', 'captain.sarah@seafable.com', '$2a$10$XdUECj9QLpYwU.zVjKS4XOgwU6OjVtYzXZOtDc18D/enp7QJj3cJi', '/placeholder.svg?height=100&width=100&text=SW', 'host')
+ON CONFLICT (email) DO UPDATE SET
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    password_hash = EXCLUDED.password_hash,
+    avatar_url = EXCLUDED.avatar_url,
+    role = EXCLUDED.role,
+    updated_at = CURRENT_TIMESTAMP
+,
+('captain.robert@seafable.com', 'Robert', 'Thompson', 'captain.robert@seafable.com', '$2a$10$XdUECj9QLpYwU.zVjKS4XOgwU6OjVtYzXZOtDc18D/enp7QJj3cJi', '/placeholder.svg?height=100&width=100&text=RT', 'host')
+ON CONFLICT (email) DO UPDATE SET
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    password_hash = EXCLUDED.password_hash,
+    avatar_url = EXCLUDED.avatar_url,
+    role = EXCLUDED.role,
+    updated_at = CURRENT_TIMESTAMP
+,
+('captain.emma@seafable.com', 'Emma', 'Davies', 'captain.emma@seafable.com', '$2a$10$XdUECj9QLpYwU.zVjKS4XOgwU6OjVtYzXZOtDc18D/enp7QJj3cJi', '/placeholder.svg?height=100&width=100&text=ED', 'host')
+ON CONFLICT (email) DO UPDATE SET
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    password_hash = EXCLUDED.password_hash,
+    avatar_url = EXCLUDED.avatar_url,
+    role = EXCLUDED.role,
+    updated_at = CURRENT_TIMESTAMP
+,
+('captain.marie@seafable.com', 'Marie', 'Dubois', 'captain.marie@seafable.com', '$2a$10$XdUECj9QLpYwU.zVjKS4XOgwU6OjVtYzXZOtDc18D/enp7QJj3cJi', '/placeholder.svg?height=100&width=100&text=MD', 'host')
+ON CONFLICT (email) DO UPDATE SET
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    password_hash = EXCLUDED.password_hash,
+    avatar_url = EXCLUDED.avatar_url,
+    role = EXCLUDED.role,
+    updated_at = CURRENT_TIMESTAMP
+,
+('captain.marco@seafable.com', 'Marco', 'Rossi', 'captain.marco@seafable.com', '$2a$10$XdUECj9QLpYwU.zVjKS4XOgwU6OjVtYzXZOtDc18D/enp7QJj3cJi', '/placeholder.svg?height=100&width=100&text=MR', 'host')
+ON CONFLICT (email) DO UPDATE SET
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    password_hash = EXCLUDED.password_hash,
+    avatar_url = EXCLUDED.avatar_url,
+    role = EXCLUDED.role,
+    updated_at = CURRENT_TIMESTAMP
+;
 
-('Michael', 'Chen', 'michael.chen@email.com', '+1 555 123 4567', '/placeholder.svg?height=100&width=100', '1978-11-22', 'American', 'Lisa Chen', '+1 555 123 4568', 'intermediate', ARRAY[]::text[], ARRAY[]::text[]),
-
-('Sophie', 'Dubois', 'sophie.dubois@email.com', '+33 6 12 34 56 89', '/placeholder.svg?height=100&width=100', '1992-07-08', 'French', 'Pierre Dubois', '+33 6 12 34 56 90', 'beginner', ARRAY['gluten-free'], ARRAY[]::text[]),
-
-('James', 'Wilson', 'james.wilson@email.com', '+44 7700 900003', '/placeholder.svg?height=100&width=100', '1980-01-30', 'British', 'Sarah Wilson', '+44 7700 900004', 'advanced', ARRAY[]::text[], ARRAY[]::text[]),
-
-('Maria', 'Rodriguez', 'maria.rodriguez@email.com', '+34 600 123 456', '/placeholder.svg?height=100&width=100', '1987-09-12', 'Spanish', 'Carlos Rodriguez', '+34 600 123 457', 'intermediate', ARRAY['pescatarian'], ARRAY[]::text[]),
-
-('Lars', 'Andersen', 'lars.andersen.guest@email.com', '+47 987 65 433', '/placeholder.svg?height=100&width=100', '1975-05-18', 'Norwegian', 'Ingrid Andersen', '+47 987 65 434', 'advanced', ARRAY[]::text[], ARRAY[]::text[]),
-
-('Isabella', 'Romano', 'isabella.romano@email.com', '+39 338 123 4568', '/placeholder.svg?height=100&width=100', '1990-12-03', 'Italian', 'Giuseppe Romano', '+39 338 123 4569', 'beginner', ARRAY['dairy-free'], ARRAY[]::text[]),
-
-('Thomas', 'Mueller', 'thomas.mueller@email.com', '+49 171 234 5679', '/placeholder.svg?height=100&width=100', '1983-08-25', 'German', 'Anna Mueller', '+49 171 234 5680', 'intermediate', ARRAY[]::text[], ARRAY['mobility assistance']),
-
-('Charlotte', 'Williams', 'charlotte.williams@email.com', '+44 7700 900005', '/placeholder.svg?height=100&width=100', '1995-04-14', 'British', 'Robert Williams', '+44 7700 900006', 'beginner', ARRAY['vegan'], ARRAY[]::text[]),
-
-('Dimitris', 'Papadopoulos', 'dimitris.papadopoulos@email.com', '+30 694 123 4568', '/placeholder.svg?height=100&width=100', '1988-10-07', 'Greek', 'Elena Papadopoulos', '+30 694 123 4569', 'intermediate', ARRAY[]::text[], ARRAY[]::text[]),
-
-('Amelie', 'Leroy', 'amelie.leroy@email.com', '+33 6 12 34 56 91', '/placeholder.svg?height=100&width=100', '1991-06-20', 'French', 'Jean Leroy', '+33 6 12 34 56 92', 'beginner', ARRAY[]::text[], ARRAY[]::text[]),
-
-('Oliver', 'Thompson', 'oliver.thompson@email.com', '+44 7700 900007', '/placeholder.svg?height=100&width=100', '1979-02-28', 'British', 'Helen Thompson', '+44 7700 900008', 'advanced', ARRAY[]::text[], ARRAY[]::text[]);
+INSERT INTO schema_migrations (version) VALUES ('04-seed-users-' || TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISSMS'))
+ON CONFLICT (version) DO NOTHING;

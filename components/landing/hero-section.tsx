@@ -1,218 +1,267 @@
 "use client"
 
-import { useState } from "react"
+import React from "react"
+
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, MapPin, Users, Loader2, Sun } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { CalendarIcon, MapPin, Users, Loader2, Search, Anchor, Waves, Zap } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import type { ActivityType } from "@/types"
+import { useRouter } from "next/navigation"
+
+const activityTypeOptions: { value: ActivityType; label: string; icon: React.ElementType }[] = [
+  { value: "sailing", label: "Sailing", icon: Anchor },
+  { value: "surfing", label: "Surfing", icon: Waves },
+  { value: "kayaking", label: "Kayaking", icon: Waves }, // Placeholder, ideally a kayak icon
+  { value: "paddleboarding", label: "Paddleboarding", icon: Waves }, // Placeholder, ideally a SUP icon
+  { value: "diving", label: "Diving", icon: Anchor }, // Placeholder, ideally a dive icon
+  { value: "jet_skiing", label: "Jet Skiing", icon: Zap },
+]
 
 export function HeroSection() {
-  const [location, setLocation] = useState("Côte d'Azur, France")
-  const [startDate, setStartDate] = useState<Date>(new Date("2025-07-20"))
-  const [duration, setDuration] = useState("full-day")
-  const [guests, setGuests] = useState("2")
+  const router = useRouter()
+  const [location, setLocation] = useState("")
+  const [selectedActivity, setSelectedActivity] = useState<ActivityType | "all">("all")
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+  const [numGuests, setNumGuests] = useState("2")
   const [isSearching, setIsSearching] = useState(false)
 
-  const handleSearch = async () => {
+  const handleSearch = useCallback(async () => {
     setIsSearching(true)
     // Simulate search delay
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    setIsSearching(false)
-    // Navigate to search results
-    window.location.href = "/search"
-  }
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    const queryParams = new URLSearchParams()
+    if (location) queryParams.set("location", location)
+    if (selectedActivity !== "all") queryParams.set("activityType", selectedActivity)
+    if (selectedDate) queryParams.set("date", format(selectedDate, "yyyy-MM-dd"))
+    if (numGuests) queryParams.set("guests", numGuests)
+
+    router.push(`/search?${queryParams.toString()}`)
+    // setIsSearching(false); // Handled by navigation
+  }, [location, selectedActivity, selectedDate, numGuests, router])
+
+  // Background animation effect
+  const [bgPosition, setBgPosition] = useState({ x: 50, y: 50 })
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const { clientX, clientY, currentTarget } = e
+      if (currentTarget instanceof HTMLElement) {
+        // Type guard
+        const { offsetWidth, offsetHeight } = currentTarget
+        const x = (clientX / offsetWidth) * 100
+        const y = (clientY / offsetHeight) * 100
+        setBgPosition({ x, y })
+      }
+    }
+    // Attach to the section itself or a wrapper for better performance
+    const heroElement = document.getElementById("hero-section-interactive-bg")
+    if (heroElement) {
+      heroElement.addEventListener("mousemove", handleMouseMove as EventListener)
+      return () => heroElement.removeEventListener("mousemove", handleMouseMove as EventListener)
+    }
+  }, [])
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Enhanced Background with SVG */}
-      <div className="absolute inset-0 z-0">
-        <div className="w-full h-full bg-gradient-to-br from-navy-900 via-blue-green-700 to-sea-green-600" />
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
-          <defs>
-            <linearGradient id="ocean" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#4A90A4" stopOpacity="1" />
-              <stop offset="50%" stopColor="#2E5984" stopOpacity="1" />
-              <stop offset="100%" stopColor="#1B365D" stopOpacity="1" />
-            </linearGradient>
-          </defs>
-          <rect fill="url(#ocean)" width="1920" height="1080" />
-          <path fill="#7FB069" opacity="0.3" d="M0,800 Q480,600 960,800 T1920,800 L1920,1080 L0,1080 Z" />
-          <path fill="#A8E6CF" opacity="0.2" d="M0,900 Q480,700 960,900 T1920,900 L1920,1080 L0,1080 Z" />
-          <circle fill="#F59E0B" opacity="0.8" cx="1600" cy="200" r="80" />
-          <g fill="#FFFFFF" opacity="0.6">
-            <polygon points="300,600 350,580 380,620 330,640" />
-            <polygon points="600,550 650,530 680,570 630,590" />
-            <polygon points="1200,650 1250,630 1280,670 1230,690" />
-          </g>
-        </svg>
-        <div className="absolute inset-0 bg-black/20" />
-      </div>
-
+    <section
+      id="hero-section-interactive-bg"
+      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+    >
+      {/* Enhanced Background */}
+      <div
+        className="absolute inset-0 z-0 transition-all duration-500 ease-out"
+        style={{
+          background: `radial-gradient(circle at ${bgPosition.x}% ${bgPosition.y}%, #1B365D 0%, #2E5984 30%, #4A90A4 70%, #7FB069 100%)`,
+          transform: `scale(1.1)`, // Slight zoom for parallax
+        }}
+      />
+      {/* Subtle wave overlay */}
+      <svg
+        className="absolute inset-0 w-full h-full z-[1]"
+        viewBox="0 0 1920 1080"
+        preserveAspectRatio="xMidYMid slice"
+        opacity="0.1"
+      >
+        <path fill="url(#oceanWave)" d="M0,800 Q240,750 480,800 T960,800 T1440,800 T1920,800 L1920,1080 L0,1080 Z">
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            values="0 0; -480 0; 0 0"
+            dur="10s"
+            repeatCount="indefinite"
+          />
+        </path>
+        <path fill="url(#oceanWave2)" d="M0,850 Q240,800 480,850 T960,850 T1440,850 T1920,850 L1920,1080 L0,1080 Z">
+          <animateTransform
+            attributeName="transform"
+            type="translate"
+            values="0 0; 480 0; 0 0"
+            dur="12s"
+            repeatCount="indefinite"
+          />
+        </path>
+        <defs>
+          <linearGradient id="oceanWave" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="white" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="oceanWave2" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.2" />
+            <stop offset="100%" stopColor="white" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div className="absolute inset-0 bg-black/25 z-[2]" /> {/* Darkening overlay */}
       {/* Hero Content */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 animate-fade-in-up">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">
-            Curated Sailing Stories
-            <span className="block text-teal-300">Await Your Discovery</span>
-          </h1>
-          <p className="text-xl md:text-2xl text-white/90 max-w-4xl mx-auto leading-relaxed">
-            Experience the sea through the eyes of local captain-guides who craft unforgettable journeys beyond ordinary
-            boat rentals
-          </p>
-        </div>
+      <div className="relative z-10 w-full max-w-5xl mx-auto px-4 animate-fade-in-up text-center">
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 leading-tight shadow-text">
+          Dive Into Your Next <span className="text-teal-300">Water Adventure</span>
+        </h1>
+        <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed mb-10 shadow-text-light">
+          Explore unique aquatic experiences hosted by local experts. From serene kayaking to thrilling surf sessions,
+          SeaFable connects you to the water.
+        </p>
 
         {/* Enhanced Search Form */}
-        <div className="bg-white/50 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
-          <div className="text-center mb-8">
-            <h3 className="text-2xl font-semibold text-navy-800 mb-2">Find Your Perfect Sailing Story</h3>
-            <p className="text-gray-600 text-lg">Discover experiences crafted by passionate local captains</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {/* Location */}
-            <div className="lg:col-span-1">
-              <Label
-                htmlFor="location"
-                className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 block"
+        <div className="bg-white/80 backdrop-blur-md rounded-2xl p-6 md:p-8 shadow-2xl border border-white/30">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4 mb-6 items-end">
+            {/* Activity Type */}
+            <div>
+              <Label htmlFor="activity-type" className="text-sm font-semibold text-gray-700 mb-1.5 block">
+                Activity
+              </Label>
+              <Select
+                value={selectedActivity}
+                onValueChange={(value) => setSelectedActivity(value as ActivityType | "all")}
               >
-                Destination
+                <SelectTrigger className="h-12 text-base border-gray-300 focus:border-teal-500 rounded-lg shadow-sm">
+                  <div className="flex items-center">
+                    {selectedActivity !== "all" &&
+                    activityTypeOptions.find((opt) => opt.value === selectedActivity)?.icon ? (
+                      React.createElement(activityTypeOptions.find((opt) => opt.value === selectedActivity)!.icon, {
+                        className: "mr-2 h-5 w-5 text-gray-500",
+                      })
+                    ) : (
+                      <Search className="mr-2 h-5 w-5 text-gray-500" />
+                    )}
+                    <SelectValue placeholder="Any Activity" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Any Activity</SelectItem>
+                  {activityTypeOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      <div className="flex items-center">
+                        <opt.icon className="mr-2 h-5 w-5 text-gray-500" /> {opt.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Location */}
+            <div>
+              <Label htmlFor="location" className="text-sm font-semibold text-gray-700 mb-1.5 block">
+                Location
               </Label>
               <div className="relative">
-                <MapPin className="absolute left-4 top-4 h-5 w-5 text-gray-400" />
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <Input
                   id="location"
-                  placeholder="French Riviera, Amalfi Coast..."
+                  placeholder="e.g., Maui, Hawaii"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="pl-12 h-14 text-lg border-2 border-gray-200 focus:border-teal-500 rounded-xl"
+                  className="pl-10 h-12 text-base border-gray-300 focus:border-teal-500 rounded-lg shadow-sm"
                 />
               </div>
             </div>
 
             {/* Date */}
             <div>
-              <Label className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 block">
-                Departure Date
+              <Label htmlFor="date" className="text-sm font-semibold text-gray-700 mb-1.5 block">
+                Date
               </Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full h-14 justify-start text-left font-normal text-lg border-2 border-gray-200 hover:border-teal-500 rounded-xl",
-                      !startDate && "text-muted-foreground",
+                      "w-full h-12 justify-start text-left font-normal text-base border-gray-300 hover:border-teal-500 rounded-lg shadow-sm",
+                      !selectedDate && "text-muted-foreground",
                     )}
                   >
-                    <CalendarIcon className="mr-3 h-5 w-5" />
-                    {startDate ? format(startDate, "MMM dd, yyyy") : "Select date"}
+                    <CalendarIcon className="mr-2 h-5 w-5" />
+                    {selectedDate ? format(selectedDate, "MMM dd, yyyy") : "Any Date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={startDate} onSelect={setStartDate} initialFocus />
+                  <Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} initialFocus />
                 </PopoverContent>
               </Popover>
             </div>
 
-            {/* Duration */}
-            <div>
-              <Label className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 block">Duration</Label>
-              <Select value={duration} onValueChange={setDuration}>
-                <SelectTrigger className="h-14 text-lg border-2 border-gray-200 focus:border-teal-500 rounded-xl">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="half-day">Half Day (4hrs)</SelectItem>
-                  <SelectItem value="full-day">Full Day (8hrs)</SelectItem>
-                  <SelectItem value="weekend">Weekend (2-3 days)</SelectItem>
-                  <SelectItem value="week">Week-long</SelectItem>
-                  <SelectItem value="custom">Custom</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Guests */}
             <div>
-              <Label className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 block">
-                Travelers
+              <Label htmlFor="guests" className="text-sm font-semibold text-gray-700 mb-1.5 block">
+                Guests
               </Label>
-              <Select value={guests} onValueChange={setGuests}>
-                <SelectTrigger className="h-14 text-lg border-2 border-gray-200 focus:border-teal-500 rounded-xl">
+              <Select value={numGuests} onValueChange={setNumGuests}>
+                <SelectTrigger className="h-12 text-base border-gray-300 focus:border-teal-500 rounded-lg shadow-sm">
                   <div className="flex items-center">
-                    <Users className="mr-3 h-5 w-5 text-gray-400" />
+                    <Users className="mr-2 h-5 w-5 text-gray-500" />
                     <SelectValue />
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">1 traveler</SelectItem>
-                  <SelectItem value="2">2 travelers</SelectItem>
-                  <SelectItem value="4">4 travelers</SelectItem>
-                  <SelectItem value="6">6 travelers</SelectItem>
-                  <SelectItem value="8">8 travelers</SelectItem>
-                  <SelectItem value="10+">10+ travelers</SelectItem>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((g) => (
+                    <SelectItem key={g} value={String(g)}>
+                      {g} guest{g > 1 ? "s" : ""}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="10+">10+ guests</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Search Actions */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <Button
-              onClick={handleSearch}
-              disabled={isSearching}
-              className="h-16 px-12 text-lg font-semibold bg-gradient-to-r from-teal-600 to-blue-green-600 hover:from-teal-700 hover:to-blue-green-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-            >
-              {isSearching ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Searching...
-                </>
-              ) : (
-                "Discover Experiences"
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              className="h-16 px-8 text-lg font-semibold border-2 border-gray-300 hover:border-teal-500 hover:text-teal-600 rounded-xl"
-            >
-              Advanced Filters
-            </Button>
-          </div>
+          <Button
+            onClick={handleSearch}
+            disabled={isSearching}
+            size="lg"
+            className="w-full md:w-auto h-14 px-10 text-lg font-semibold bg-gradient-to-r from-teal-500 to-blue-green-600 hover:from-teal-600 hover:to-blue-green-700 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+          >
+            {isSearching ? (
+              <>
+                <Loader2 className="mr-2.5 h-5 w-5 animate-spin" />
+                Searching Adventures...
+              </>
+            ) : (
+              <>
+                <Search className="mr-2.5 h-5 w-5" />
+                Find Your Adventure
+              </>
+            )}
+          </Button>
+        </div>
 
-          {/* Weather Notice */}
-          <div className="bg-gradient-to-r from-teal-100 to-sea-green-100 border border-teal-200 rounded-2xl p-4 mb-8">
-            <div className="flex items-center gap-3">
-              <Sun className="h-6 w-6 text-teal-600" />
-              <span className="text-navy-800 font-medium text-lg">
-                Exceptional sailing conditions forecasted for your dates - calm seas, perfect winds, and Mediterranean
-                sunshine
-              </span>
-            </div>
-          </div>
-
-          {/* Trust Indicators */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pt-8 border-t border-gray-200">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-teal-600 mb-1">850+</div>
-              <div className="text-gray-600 text-sm">Curated Experiences</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-teal-600 mb-1">200+</div>
-              <div className="text-gray-600 text-sm">Expert Captains</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-teal-600 mb-1">15,000+</div>
-              <div className="text-gray-600 text-sm">Happy Travelers</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-teal-600 mb-1">4.9★</div>
-              <div className="text-gray-600 text-sm">Average Rating</div>
-            </div>
-          </div>
+        {/* Trust Indicators / Quick Links */}
+        <div className="mt-12 flex flex-wrap justify-center gap-x-6 gap-y-3 text-white/80 text-sm">
+          <span>
+            <Anchor className="inline h-4 w-4 mr-1 text-teal-300" /> Expert Local Hosts
+          </span>
+          <span>
+            <Waves className="inline h-4 w-4 mr-1 text-teal-300" /> Diverse Water Activities
+          </span>
+          <span>
+            <Zap className="inline h-4 w-4 mr-1 text-teal-300" /> Unforgettable Experiences
+          </span>
         </div>
       </div>
     </section>
