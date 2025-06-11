@@ -50,3 +50,29 @@ export const apiResponseSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type SearchInput = z.infer<typeof searchSchema>
+
+// Experience search validation schema
+export const experienceSearchSchema = z.object({
+  searchTerm: z.string().optional(),
+  location: z.string().optional(),
+  activityType: z.array(z.string()).optional(),
+  category: z.array(z.string()).optional(),
+  difficultyLevel: z.string().optional(),
+  guests: z.number().optional(),
+  priceMin: z.number().optional(),
+  priceMax: z.number().optional(),
+  durationHoursMin: z.number().optional(),
+  durationHoursMax: z.number().optional(),
+  hostRatingMin: z.number().optional(),
+  dateRange: z
+    .object({
+      start: z.string().optional(),
+      end: z.string().optional(),
+    })
+    .optional(),
+  sortBy: z.enum(["price_asc", "price_desc", "rating_desc", "popularity_desc"]).optional(),
+  page: z.number().default(1),
+  limit: z.number().default(10),
+})
+
+export type ExperienceSearchInput = z.infer<typeof experienceSearchSchema>

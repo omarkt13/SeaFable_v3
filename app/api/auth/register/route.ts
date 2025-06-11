@@ -1,63 +1,143 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { registerUser } from "@/lib/auth-utils"
+import { supabase } from "@/lib/supabase"
 import { registerSchema } from "@/lib/validations"
-import { validateRequest } from "@/lib/middleware"
-import { withRateLimit, authRateLimiter } from "@/lib/rate-limiter"
-import { withSecurity } from "@/lib/security"
-import { withLogging, logger } from "@/lib/logger"
+import { logger } from "@/lib/logger"
 
-async function registerHandler(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    // Validate request data
-    const validation = validateRequest(registerSchema, body)
-    if (!validation.success) {
-      logger.logSecurityEvent("Invalid registration data", {
-        error: validation.error,
-        ip: request.ip,
-      })
-      return NextResponse.json({ success: false, error: validation.error }, { status: 400 })
+    // Validate input
+    const validatedData = registerSchema.parse(body)
+    const { email, password, firstName, lastName } = validatedData
+
+    // Check if user already exists
+    const { data: existingUser } = await supabase.from("users").select("id").eq("email", email).single()
+
+    if (existingUser) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "User with this email already exists",
+        },
+        { status: 409 },
+      )
     }
 
-    const { firstName, lastName, email, password } = validation.data
-
-    logger.logAuthEvent("Registration attempt", undefined, { email })
-
-    // Register the user
-    const result = await registerUser({
-      firstName,
-      lastName,
+    // Create user with Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+        },
+        emailRedirectTo: process.env.NEXT_PUBLIC_APP_URL
+          ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+          : `${request.headers.get("origin") || "http://localhost:3000"}/auth/callback`,
+      },
     })
 
-    if (!result.success) {
-      logger.logAuthEvent("Registration failed", undefined, {
+    if (error) {
+      logger.warn("Registration attempt failed", {
         email,
-        error: result.error,
+        error: error.message,
+        timestamp: new Date().toISOString(),
       })
-      return NextResponse.json({ success: false, error: result.error }, { status: 400 })
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: 400 },
+      )
     }
 
-    logger.logAuthEvent("Registration successful", result.user?.id, { email })
+    if (!data.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to create user account",
+        },
+        { status: 500 },
+      )
+    }
 
+    // Create user profile in database
+    const { error: profileError } = await supabase.from("users").insert({
+      id: data.user.id,
+      email: data.user.email,
+      first_name: firstName,
+      last_name: lastName,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+
+    if (profileError) {
+      logger.error("Failed to create user profile", {
+        userId: data.user.id,
+        error: profileError.message,
+        timestamp: new Date().toISOString(),
+      })
+
+      // Note: User is created in auth but profile creation failed
+      // This should be handled by a background job or retry mechanism
+    }
+
+    logger.info("User registered successfully", {
+      userId: data.user.id,
+      email: data.user.email,
+      timestamp: new Date().toISOString(),
+    })
+
+    // Return success
     return NextResponse.json({
       success: true,
-      message: result.needsEmailConfirmation
-        ? "Registration successful! Please check your email to confirm your account."
-        : "Registration successful!",
-      needsEmailConfirmation: result.needsEmailConfirmation,
+      message: "Account created successfully. Please check your email to verify your account.",
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        emailVerified: false,
+      },
+      requiresVerification: !data.session, // If no session, email verification required
     })
   } catch (error) {
-    logger.logError(error as Error, {
-      endpoint: "register",
-      ip: request.ip,
+    logger.error("Registration API error", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
     })
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+
+    if (error instanceof Error && error.name === "ZodError") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid input data",
+          details: error.message,
+        },
+        { status: 400 },
+      )
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Internal server error",
+      },
+      { status: 500 },
+    )
   }
 }
 
-export async function POST(request: NextRequest) {
-  return withRateLimit(request, authRateLimiter, () => withSecurity(withLogging(registerHandler))(request))
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  })
 }

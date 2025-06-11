@@ -2,33 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Fresha-inspired color palette */
-  --primary: #6366f1;
-  --primary-foreground: #ffffff;
-  --secondary: #f8fafc;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #e0e7ff;
-  --accent-foreground: #3730a3;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #f1f5f9;
-  --ring: #6366f1;
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --radius: 12px;
+@layer base {
+  :root {
+    /* Fresha-inspired color palette */
+    --primary: 173 90% 36%; /* Teal */
+    --primary-foreground: 0 0% 100%; /* White */
+    --secondary: 220 13% 91%; /* Light Slate Gray */
+    --secondary-foreground: 224 71.4% 4.1%; /* Dark Slate Blue */
+    --muted: 220 13% 91%; /* Light Slate Gray */
+    --muted-foreground: 220 9% 46.1%; /* Slate Gray */
+    --accent: 220 13% 91%; /* Light Slate Gray */
+    --accent-foreground: 173 90% 36%; /* Teal */
+    --destructive: 0 84.2% 60.2%; /* Red */
+    --destructive-foreground: 0 0% 100%; /* White */
+    --border: 220 13% 85%; /* Lighter Slate Gray for borders */
+    --input: 220 13% 85%; /* Lighter Slate Gray for borders */
+    --ring: 173 90% 36%; /* Teal */
+    --background: 0 0% 100%; /* White */
+    --foreground: 224 71.4% 4.1%; /* Dark Slate Blue */
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 224 71.4% 4.1%; /* Dark Slate Blue */
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 224 71.4% 4.1%; /* Dark Slate Blue */
+    --radius: 0.75rem; /* Updated from 12px to 0.75rem for consistency */
 
-  /* Purple gradient colors */
-  --gradient-from: #f3e8ff;
-  --gradient-via: #e9d5ff;
-  --gradient-to: #ddd6fe;
+    /* Purple gradient colors */
+    --gradient-from: #f3e8ff;
+    --gradient-via: #e9d5ff;
+    --gradient-to: #ddd6fe;
+
+    /* Custom colors for SeaFable */
+    --sea-green-50: #f0fdfa;
+    --sea-green-100: #ccfbf1;
+    --sea-green-600: #0d9488; /* Teal-600 */
+    --sea-green-700: #0f766e; /* Teal-700 */
+
+    --navy-800: #1e3a8a; /* Dark Blue */
+    --navy-900: #172554; /* Very Dark Blue */
+
+    --slate-50: #f8fafc;
+    --slate-100: #f1f5f9;
+    --slate-200: #e2e8f0;
+    --slate-300: #cbd5e1;
+    --slate-400: #94a3b8;
+    --slate-500: #64748b;
+    --slate-600: #475569;
+    --slate-700: #334155;
+    --slate-800: #1e293b;
+    --slate-900: #0f172a;
+  }
+
+  .dark {
+    /* Define dark mode colors if needed later */
+  }
 }
 
 * {
@@ -39,8 +65,7 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--font-inter), "Inter", sans-serif;
-  font-feature-settings: "cv11", "ss01";
-  font-variation-settings: "opsz" 32;
+  font-feature-settings: "rlig" 1, "calt" 1;
   line-height: 1.5;
 }
 
@@ -79,6 +104,10 @@ h6 {
   @apply bg-white hover:bg-gray-50 text-gray-900 font-medium px-6 py-2.5 rounded-xl border border-gray-200 transition-all duration-200;
 }
 
+.btn-gradient {
+  @apply bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white;
+}
+
 /* Card styling */
 .card {
   @apply bg-white rounded-2xl shadow-sm border border-gray-100;
@@ -96,4 +125,9 @@ h6 {
 
 .stats-text {
   @apply text-gray-600 font-medium;
+}
+
+/* Add more white space around main content areas */
+main > section {
+  @apply py-12 md:py-16 lg:py-20;
 }

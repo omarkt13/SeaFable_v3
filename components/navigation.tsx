@@ -14,14 +14,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Anchor, Menu, User, LogOut, Settings, Calendar, Building } from "lucide-react"
+import { Anchor, Menu, User, LogOut, Settings, Calendar } from "lucide-react"
 import { useAuth } from "./auth-provider"
 
 const navigationItems = [
-  { name: "Experiences", href: "/experiences" },
-  { name: "Search", href: "/search" },
-  { name: "About", href: "/about" },
-  { name: "Contact", href: "/contact" },
+  { name: "Featured Experiences", href: "/experiences" },
+  { name: "About Us", href: "/about" },
+  { name: "Business", href: "/business/login" },
 ]
 
 export default function Navigation() {
@@ -61,14 +60,6 @@ export default function Navigation() {
 
           {/* Desktop Auth */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* Business Portal Link */}
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/business/login">
-                <Building className="h-4 w-4 mr-2" />
-                Business Portal
-              </Link>
-            </Button>
-
             {loading ? (
               <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
             ) : user ? (
@@ -124,12 +115,6 @@ export default function Navigation() {
                 <Button variant="ghost" asChild>
                   <Link href="/login">Sign In</Link>
                 </Button>
-                <Button
-                  asChild
-                  className="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700"
-                >
-                  <Link href="/register">Sign Up</Link>
-                </Button>
               </div>
             )}
           </div>
@@ -159,14 +144,6 @@ export default function Navigation() {
                   ))}
 
                   <div className="border-t pt-4">
-                    {/* Business Portal Link for Mobile */}
-                    <Button variant="outline" className="w-full mb-4" asChild>
-                      <Link href="/business/login" onClick={() => setIsOpen(false)}>
-                        <Building className="mr-2 h-4 w-4" />
-                        Business Portal
-                      </Link>
-                    </Button>
-
                     {loading ? (
                       <div className="w-full h-10 rounded bg-gray-200 animate-pulse" />
                     ) : user ? (
@@ -221,11 +198,6 @@ export default function Navigation() {
                         <Button variant="ghost" className="w-full" asChild>
                           <Link href="/login" onClick={() => setIsOpen(false)}>
                             Sign In
-                          </Link>
-                        </Button>
-                        <Button className="w-full bg-gradient-to-r from-teal-600 to-blue-600" asChild>
-                          <Link href="/register" onClick={() => setIsOpen(false)}>
-                            Sign Up
                           </Link>
                         </Button>
                       </div>

@@ -40,3 +40,5 @@ export function getWeatherBadgeColor(condition: string) {
   }
   return colors[condition as keyof typeof colors] || colors.excellent
 }
+
+// Export cn function (already exists above)

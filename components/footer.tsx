@@ -1,70 +1,61 @@
 import Link from "next/link"
-import { Anchor, Mail, Phone, MapPin } from "lucide-react"
+import { Anchor } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="bg-gray-900 text-white">
-      <div className="container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="bg-gray-900 text-white py-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <Anchor className="h-6 w-6" />
-              <span className="text-lg font-bold">SeaFable</span>
+              <Anchor className="h-8 w-8 text-teal-400" />
+              <span className="text-2xl font-bold">SeaFable</span>
             </div>
-            <p className="text-gray-400">Premium sailing experiences with expert captains worldwide.</p>
+            <p className="text-gray-400 mb-4">Connecting adventurers with water experiences worldwide.</p>
           </div>
-
           <div>
-            <h3 className="font-semibold mb-4">Quick Links</h3>
-            <div className="space-y-2">
-              <Link href="/experiences" className="block text-gray-400 hover:text-white">
-                Experiences
-              </Link>
-              <Link href="/about" className="block text-gray-400 hover:text-white">
-                About
-              </Link>
-              <Link href="/contact" className="block text-gray-400 hover:text-white">
-                Contact
-              </Link>
-            </div>
+            <h3 className="font-bold mb-4">Company</h3>
+            <ul className="space-y-2 text-gray-400">
+              <li>
+                <Link href="/about" className="hover:text-white transition-colors">
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link href="/business/login" className="hover:text-white transition-colors">
+                  Business
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="hover:text-white transition-colors">
+                  Contact
+                </Link>
+              </li>
+            </ul>
           </div>
-
           <div>
-            <h3 className="font-semibold mb-4">Contact</h3>
-            <div className="space-y-2 text-gray-400">
-              <div className="flex items-center space-x-2">
-                <Mail className="h-4 w-4" />
-                <span>hello@SeaFable.com</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4" />
-                <span>+1 (555) 123-4567</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4" />
-                <span>Mediterranean Coast</span>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 className="font-semibold mb-4">Follow Us</h3>
-            <div className="space-y-2 text-gray-400">
-              <a href="#" className="block hover:text-white">
-                Instagram
-              </a>
-              <a href="#" className="block hover:text-white">
-                Facebook
-              </a>
-              <a href="#" className="block hover:text-white">
-                Twitter
-              </a>
-            </div>
+            <h3 className="font-bold mb-4">Support</h3>
+            <ul className="space-y-2 text-gray-400">
+              <li>
+                <Link href="/help" className="hover:text-white transition-colors">
+                  Help Center
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy" className="hover:text-white transition-colors">
+                  Privacy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-white transition-colors">
+                  Terms
+                </Link>
+              </li>
+            </ul>
           </div>
         </div>
-
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; 2024 SeaFable. All rights reserved.</p>
+        <div className="border-t border-gray-700 mt-12 pt-8 text-center text-gray-400">
+          <p>&copy; 2025 SeaFable. All rights reserved.</p>
         </div>
       </div>
     </footer>

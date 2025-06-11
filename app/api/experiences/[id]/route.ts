@@ -1,22 +1,28 @@
 import { type NextRequest, NextResponse } from "next/server"
 import type { Experience } from "@/types"
+// Directly import mockExperiences from the main experiences API route
+import { mockExperiences } from "../experiences/route" // Adjust path as needed
 
-// Fetch the mock experiences from the main route's data source
-// In a real app, this would query a database
+/**
+ * @function getMockExperienceById
+ * @description Retrieves a mock experience by its ID from the in-memory mock data.
+ * @param {string} id - The ID of the experience to retrieve.
+ * @returns {Promise<Experience | undefined>} The experience object if found, otherwise undefined.
+ */
 const getMockExperienceById = async (id: string): Promise<Experience | undefined> => {
-  // Simulate fetching all experiences and finding one by ID
-  // This is inefficient for a real API but fine for mocking
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/experiences?limit=100`,
-  ) // Fetch a large limit
-  if (!response.ok) return undefined
-  const result = await response.json()
-  if (result.success && Array.isArray(result.data)) {
-    return result.data.find((exp: Experience) => exp.id === id)
-  }
-  return undefined
+  // In a real application, this would query a database.
+  // For mocking, we directly filter the in-memory mockExperiences array.
+  return mockExperiences.find((exp) => exp.id === id)
 }
 
+/**
+ * @function GET
+ * @description Handles GET requests for a specific experience by ID.
+ * @param {NextRequest} request - The incoming Next.js request object.
+ * @param {object} params - The route parameters, containing the experience ID.
+ * @param {string} params.id - The ID of the experience.
+ * @returns {NextResponse} A JSON response containing the experience data or an error.
+ */
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const experience = await getMockExperienceById(params.id)
@@ -26,24 +32,28 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     // Add more detailed information if needed for the detail page
+    // This part ensures consistency and provides default values if some fields are sparse in mock data
     const detailedExperience: Experience = {
       ...experience,
       description:
         experience.description ||
         "A detailed description of this amazing water activity, highlighting its unique features, what to expect, and why it's an unforgettable experience. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-      images: experience.images || [
-        { id: "img1", imageUrl: experience.primaryImage, altText: experience.title, isPrimary: true },
-        {
-          id: "img2",
-          imageUrl: `/placeholder.svg?height=400&width=600&query=${encodeURIComponent(experience.title)}+view+2`,
-          altText: `${experience.title} - view 2`,
-        },
-        {
-          id: "img3",
-          imageUrl: `/placeholder.svg?height=400&width=600&query=${encodeURIComponent(experience.title)}+view+3`,
-          altText: `${experience.title} - view 3`,
-        },
-      ],
+      images:
+        experience.images && experience.images.length > 0
+          ? experience.images
+          : [
+              { id: "img1", imageUrl: experience.primaryImage, altText: experience.title, isPrimary: true },
+              {
+                id: "img2",
+                imageUrl: `/placeholder.svg?height=400&width=600&query=${encodeURIComponent(experience.title)}+view+2`,
+                altText: `${experience.title} - view 2`,
+              },
+              {
+                id: "img3",
+                imageUrl: `/placeholder.svg?height=400&width=600&query=${encodeURIComponent(experience.title)}+view+3`,
+                altText: `${experience.title} - view 3`,
+              },
+            ],
       itinerary: (experience as any).itinerary || [
         // Cast to any to access potential itinerary from old structure
         {

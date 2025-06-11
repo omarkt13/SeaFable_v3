@@ -1,13 +1,5 @@
-import { Hero } from "@/components/hero"
-import { RecommendedSection } from "@/components/recommended-section"
-import { CategoriesSection } from "@/components/categories-section"
+import { LandingPage } from "@/components/landing-page"
 
 export default function HomePage() {
-  return (
-    <>
-      <Hero />
-      <RecommendedSection />
-      <CategoriesSection />
-    </>
-  )
+  return <LandingPage />
 }

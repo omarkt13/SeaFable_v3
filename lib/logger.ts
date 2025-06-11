@@ -180,3 +180,6 @@ export function withLogging(handler: (request: Request) => Promise<Response>) {
     }
   }
 }
+
+// Export log instance for backward compatibility
+export const log = logger

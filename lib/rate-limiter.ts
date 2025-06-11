@@ -129,3 +129,30 @@ export async function withRateLimit(
 
   return response
 }
+
+// Apply rate limit function
+export async function applyRateLimit(
+  request: NextRequest,
+  key: string,
+  maxRequests: number,
+  windowMs: number,
+): Promise<{ success: boolean; limit?: number; period?: number; retryAfter?: number }> {
+  const rateLimiter = new RateLimiter({
+    windowMs: windowMs * 1000, // Convert to milliseconds
+    maxRequests,
+    keyGenerator: (req) => `${key}:${req.ip || "unknown"}`,
+  })
+
+  const { allowed, resetTime } = await rateLimiter.isAllowed(request)
+
+  if (!allowed) {
+    return {
+      success: false,
+      limit: maxRequests,
+      period: windowMs,
+      retryAfter: Math.ceil((resetTime! - Date.now()) / 1000),
+    }
+  }
+
+  return { success: true }
+}
