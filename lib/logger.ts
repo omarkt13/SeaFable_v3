@@ -1,185 +1,164 @@
-interface LogLevel {
-  ERROR: "error"
-  WARN: "warn"
-  INFO: "info"
-  DEBUG: "debug"
+/**
+ * Logger utility for consistent logging across the application
+ */
+
+type LogLevel = "debug" | "info" | "warn" | "error"
+
+interface LogContext {
+  [key: string]: any
 }
 
-interface LogEntry {
-  timestamp: string
-  level: keyof LogLevel
-  message: string
-  context?: Record<string, any>
-  userId?: string
-  requestId?: string
-  ip?: string
-  userAgent?: string
+interface LoggerOptions {
+  defaultMeta?: LogContext
+  level?: LogLevel
 }
 
 class Logger {
-  private logLevel: keyof LogLevel
+  private level: LogLevel
+  private defaultMeta: LogContext
+  private environment: string
+  private service: string
+  private webhookUrl?: string
 
-  constructor() {
-    this.logLevel = (process.env.LOG_LEVEL as keyof LogLevel) || "info"
+  constructor(options: LoggerOptions = {}) {
+    this.level = options.level || (process.env.LOG_LEVEL as LogLevel) || "info"
+    this.defaultMeta = options.defaultMeta || {}
+    this.environment = process.env.NODE_ENV || "development"
+    this.service = "seafable-api"
+    this.webhookUrl = process.env.LOG_WEBHOOK_URL
   }
 
-  private shouldLog(level: keyof LogLevel): boolean {
-    const levels: Record<keyof LogLevel, number> = {
-      ERROR: 0,
-      WARN: 1,
-      INFO: 2,
-      DEBUG: 3,
+  private shouldLog(level: LogLevel): boolean {
+    const levels: Record<LogLevel, number> = {
+      debug: 0,
+      info: 1,
+      warn: 2,
+      error: 3,
     }
-
-    return levels[level] <= levels[this.logLevel]
+    return levels[level] >= levels[this.level]
   }
 
-  private formatLog(entry: LogEntry): string {
-    return JSON.stringify({
-      ...entry,
-      environment: process.env.NODE_ENV,
-      service: "seafable-api",
-    })
+  private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
+    const timestamp = new Date().toISOString()
+    const formattedContext = context ? ` ${JSON.stringify(context)}` : ""
+    return `[${timestamp}] [${level.toUpperCase()}] ${message}${formattedContext}`
   }
 
-  private log(level: keyof LogLevel, message: string, context?: Record<string, any>) {
-    if (!this.shouldLog(level)) return
+  private async sendToWebhook(level: LogLevel, message: string, context?: LogContext) {
+    if (!this.webhookUrl) return
 
-    const entry: LogEntry = {
-      timestamp: new Date().toISOString(),
-      level,
-      message,
-      context,
-    }
-
-    const formattedLog = this.formatLog(entry)
-
-    switch (level) {
-      case "ERROR":
-        console.error(formattedLog)
-        break
-      case "WARN":
-        console.warn(formattedLog)
-        break
-      case "INFO":
-        console.info(formattedLog)
-        break
-      case "DEBUG":
-        console.debug(formattedLog)
-        break
-    }
-
-    // In production, you might want to send logs to external service
-    if (process.env.NODE_ENV === "production" && level === "ERROR") {
-      this.sendToExternalLogger(entry)
-    }
-  }
-
-  private async sendToExternalLogger(entry: LogEntry) {
-    // Implement external logging service integration
-    // e.g., Sentry, LogRocket, DataDog, etc.
     try {
-      // Example: Send to webhook or logging service
-      if (process.env.LOG_WEBHOOK_URL) {
-        await fetch(process.env.LOG_WEBHOOK_URL, {
+      const payload = {
+        timestamp: new Date().toISOString(),
+        level,
+        message,
+        context: { ...context, timestamp: new Date().toISOString() },
+        environment: this.environment,
+        service: this.service,
+      }
+
+      // Only attempt to send if we're in a browser or Node.js environment
+      if (typeof fetch === "function") {
+        const webhookToken = process.env.WEBHOOK_TEST_TOKEN || ""
+        await fetch(this.webhookUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(entry),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${webhookToken}`,
+          },
+          body: JSON.stringify(payload),
         })
       }
     } catch (error) {
-      console.error("Failed to send log to external service:", error)
+      // Silently fail webhook errors to avoid infinite loops
+      console.error("Failed to send log to webhook:", error)
     }
   }
 
-  error(message: string, context?: Record<string, any>) {
-    this.log("ERROR", message, context)
+  debug(message: string, context?: LogContext): void {
+    if (this.shouldLog("debug")) {
+      const logMessage = this.formatMessage("debug", message, { ...this.defaultMeta, ...context })
+      console.debug(logMessage)
+      this.sendToWebhook("debug", message, { ...this.defaultMeta, ...context })
+    }
   }
 
-  warn(message: string, context?: Record<string, any>) {
-    this.log("WARN", message, context)
+  info(message: string, context?: LogContext): void {
+    if (this.shouldLog("info")) {
+      const logMessage = this.formatMessage("info", message, { ...this.defaultMeta, ...context })
+      console.info(logMessage)
+      this.sendToWebhook("info", message, { ...this.defaultMeta, ...context })
+    }
   }
 
-  info(message: string, context?: Record<string, any>) {
-    this.log("INFO", message, context)
+  warn(message: string, context?: LogContext): void {
+    if (this.shouldLog("warn")) {
+      const logMessage = this.formatMessage("warn", message, { ...this.defaultMeta, ...context })
+      console.warn(logMessage)
+      this.sendToWebhook("warn", message, { ...this.defaultMeta, ...context })
+    }
   }
 
-  debug(message: string, context?: Record<string, any>) {
-    this.log("DEBUG", message, context)
-  }
-
-  // Request-specific logging
-  logRequest(request: Request, context?: Record<string, any>) {
-    this.info("API Request", {
-      method: request.method,
-      url: request.url,
-      userAgent: request.headers.get("user-agent"),
-      ...context,
-    })
-  }
-
-  logError(error: Error, context?: Record<string, any>) {
-    this.error(error.message, {
-      stack: error.stack,
-      name: error.name,
-      ...context,
-    })
-  }
-
-  // Security-specific logging
-  logSecurityEvent(event: string, context?: Record<string, any>) {
-    this.warn(`Security Event: ${event}`, {
-      ...context,
-      securityEvent: true,
-    })
-  }
-
-  logAuthEvent(event: string, userId?: string, context?: Record<string, any>) {
-    this.info(`Auth Event: ${event}`, {
-      userId,
-      ...context,
-      authEvent: true,
-    })
+  error(message: string, context?: LogContext): void {
+    if (this.shouldLog("error")) {
+      const logMessage = this.formatMessage("error", message, { ...this.defaultMeta, ...context })
+      console.error(logMessage)
+      this.sendToWebhook("error", message, { ...this.defaultMeta, ...context })
+    }
   }
 }
 
-export const logger = new Logger()
+// Create and export a singleton instance
+export const log = new Logger()
 
-// Request logging middleware
-export function withLogging(handler: (request: Request) => Promise<Response>) {
-  return async (request: Request): Promise<Response> => {
+// Also export as a named export for compatibility
+export { log as logger }
+
+/**
+ * Higher-order function to add logging to API routes
+ */
+export function withLogging(handler: Function, context?: LogContext) {
+  return async (request: Request) => {
     const startTime = Date.now()
-    const requestId = crypto.randomUUID()
+    const method = request.method
+    const url = request.url
 
-    logger.logRequest(request, { requestId })
+    // Log request start
+    log.info(`${method} ${url} - Request started`, {
+      method,
+      url,
+      userAgent: request.headers.get("user-agent"),
+      ...context,
+    })
 
     try {
+      // Call the original handler
       const response = await handler(request)
       const duration = Date.now() - startTime
 
-      logger.info("API Response", {
-        requestId,
-        status: response.status,
+      // Log successful response
+      log.info(`${method} ${url} - Request completed`, {
+        method,
+        url,
+        status: response instanceof Response ? response.status : 200,
         duration,
-        method: request.method,
-        url: request.url,
+        ...context,
       })
 
       return response
     } catch (error) {
       const duration = Date.now() - startTime
 
-      logger.logError(error as Error, {
-        requestId,
+      // Log error
+      log.error(`${method} ${url} - Request failed`, {
+        method,
+        url,
+        error: error instanceof Error ? error.message : "Unknown error",
         duration,
-        method: request.method,
-        url: request.url,
+        ...context,
       })
 
       throw error
     }
   }
 }
-
-// Export log instance for backward compatibility
-export const log = logger

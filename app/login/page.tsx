@@ -44,7 +44,11 @@ export default function LoginPage() {
     setError("")
     setSuccess("")
 
+    console.log("🔐 Login form submitted:", { email: formData.email, hasPassword: !!formData.password })
+
     try {
+      console.log("📡 Making API call to /api/auth/login")
+
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
@@ -53,23 +57,42 @@ export default function LoginPage() {
         body: JSON.stringify(formData),
       })
 
+      console.log("📡 API response status:", response.status)
+
       const result = await response.json()
+      console.log("📡 API response data:", { success: result.success, error: result.error })
 
       if (!result.success) {
+        console.error("❌ Login failed:", result.error)
         setError(result.error || "Login failed")
         return
       }
 
+      console.log("✅ Login successful, setting session...")
+
       // Store session in Supabase client
       if (result.session) {
-        await supabase.auth.setSession(result.session)
+        console.log("💾 Setting Supabase session...")
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: result.session.accessToken,
+          refresh_token: result.session.refreshToken,
+        })
+
+        if (sessionError) {
+          console.error("❌ Session error:", sessionError)
+          setError("Failed to establish session")
+          return
+        }
+
+        console.log("✅ Session set successfully")
       }
 
+      console.log("🔄 Redirecting to dashboard...")
       // Redirect to dashboard
       router.push("/dashboard")
       router.refresh()
     } catch (error) {
-      console.error("Login error:", error)
+      console.error("💥 Login error:", error)
       setError("An unexpected error occurred. Please try again.")
     } finally {
       setIsLoading(false)
@@ -156,6 +179,15 @@ export default function LoginPage() {
               </Link>
             </p>
           </div>
+
+          {/* Debug info in development */}
+          {process.env.NODE_ENV === "development" && (
+            <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
+              <p>Debug: Check browser console for detailed logs</p>
+              <p>Supabase URL: {process.env.NEXT_PUBLIC_SUPABASE_URL ? "✅ Set" : "❌ Missing"}</p>
+              <p>Supabase Key: {process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "✅ Set" : "❌ Missing"}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

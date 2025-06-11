@@ -8,9 +8,10 @@ export type ActivityType =
   | "diving"
   | "jet_skiing"
   | "windsurfing"
-  | "fishing_charter"
+  | "fishing" // Changed from "fishing_charter"
   | "whale_watching"
-  | "snorkeling_tour"
+  | "snorkeling" // Changed from "snorkeling_tour"
+  | "other" // Add missing type
 
 export type ExperienceCategory =
   | "adventure"

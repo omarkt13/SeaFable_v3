@@ -6,9 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit",
-    "security-audit": "npm audit --audit-level moderate"
+    "lint": "next lint --fix",
+    "type-check": "tsc --noEmit --skipLibCheck",
+    "security-audit": "npm audit --audit-level moderate",
+    "analyze": "ANALYZE=true next build",
+    "performance": "npm run build && npm run start",
+    "test:lighthouse": "lhci autorun",
+    "clean": "rm -rf .next out node_modules/.cache"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",
@@ -26,15 +30,16 @@
     "@radix-ui/react-toast": "latest",
     "@supabase/supabase-js": "latest",
     "bcryptjs": "latest",
+    "child_process": "latest",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "crypto": "latest",
     "date-fns": "latest",
     "fs": "latest",
     "isomorphic-dompurify": "latest",
     "lucide-react": "^0.454.0",
     "next": "14.2.16",
     "next-themes": "latest",
+    "path": "latest",
     "react": "^18",
     "react-day-picker": "latest",
     "react-dom": "^18",
@@ -53,5 +58,9 @@
     "postcss": "^8.5",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

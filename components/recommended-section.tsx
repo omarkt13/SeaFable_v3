@@ -94,15 +94,17 @@ export function RecommendedSection() {
         <p className="text-slate-600 mb-10 text-lg">Handpicked adventures we think you'll love.</p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {recommendedExperiences.map((experience) => (
+          {recommendedExperiences.map((experience, index) => (
             <Link key={experience.id} href={`/experiences/${experience.id}`} passHref>
               <Card className="overflow-hidden rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 ease-in-out transform hover:-translate-y-1 cursor-pointer h-full flex flex-col">
                 <div className="relative h-56 w-full">
                   <Image
-                    src={`/abstract-geometric-shapes.png?width=400&height=300&query=${encodeURIComponent(experience.imageQuery)}`}
+                    src={`/images/experiences/${experience.id}.jpg`} // Use actual images
                     alt={experience.title}
                     fill
                     className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    priority={index < 2} // Prioritize first 2 images (assuming 'index' is available from map)
                   />
                   <div className="absolute top-2 right-2 flex flex-col gap-1">
                     {experience.tags?.map((tag) => (

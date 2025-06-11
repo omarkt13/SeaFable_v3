@@ -5,15 +5,23 @@ import type { Database } from "@/types/database"
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+console.log("🔧 Supabase Configuration:")
+console.log("URL:", supabaseUrl ? "✅ Set" : "❌ Missing")
+console.log("Anon Key:", supabaseAnonKey ? "✅ Set" : "❌ Missing")
+
 // Validate environment variables
 if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("❌ Missing Supabase environment variables")
   throw new Error("Missing Supabase environment variables. Please check your .env.local file.")
 }
 
 // Validate URL format
 if (!supabaseUrl.startsWith("https://") || !supabaseUrl.includes("supabase.co")) {
+  console.error("❌ Invalid Supabase URL format:", supabaseUrl)
   throw new Error("Invalid Supabase URL format")
 }
+
+console.log("✅ Supabase configuration valid")
 
 // Client-side Supabase client
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -24,6 +32,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     redirectTo:
       process.env.NEXT_PUBLIC_APP_URL ||
       (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"),
+  },
+  db: {
+    schema: "public",
   },
 })
 
@@ -39,6 +50,9 @@ export const createServerSupabaseClient = () => {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+    db: {
+      schema: "public",
     },
   })
 }
@@ -56,16 +70,19 @@ export const createAdminSupabaseClient = () => {
       autoRefreshToken: false,
       persistSession: false,
     },
+    db: {
+      schema: "public",
+    },
   })
 }
 
 // Test connection function
 export const testSupabaseConnection = async () => {
   try {
-    // Changed 'profiles' to 'users' to match your database schema
+    console.log("🧪 Testing Supabase connection...")
     const { data, error } = await supabase.from("users").select("count").limit(1)
     if (error) {
-      console.warn("Supabase connection test failed:", error.message)
+      console.warn("⚠️ Supabase connection test failed:", error.message)
       return false
     }
     console.log("✅ Supabase connection successful")
@@ -110,4 +127,40 @@ export const getCurrentSession = async () => {
     console.error("Error in getCurrentSession:", error)
     return null
   }
+}
+
+// Optimized getExperiences query example
+export const getExperiences = async (filters?: any) => {
+  let query = supabase
+    .from("experiences")
+    .select(`
+      id,
+      title,
+      location,
+      pricePerPerson,
+      rating,
+      totalReviews,
+      primaryImage,
+      activityType,
+      host_profiles(id, name, avatarUrl),
+      experience_images(imageUrl, altText)
+    `)
+    .eq("status", "active")
+    .order("rating", { ascending: false })
+    .limit(20)
+
+  if (filters?.activityType) {
+    query = query.eq("activityType", filters.activityType)
+  }
+  if (filters?.location) {
+    query = query.textSearch("location_fts", filters.location)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error("Error fetching experiences:", error)
+    return []
+  }
+  return data
 }

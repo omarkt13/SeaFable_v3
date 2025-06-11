@@ -1,158 +1,160 @@
-import type { NextRequest } from "next/server"
+/**
+ * Simple in-memory rate limiter for API routes
+ */
 
-interface RateLimitConfig {
-  windowMs: number // Time window in milliseconds
-  maxRequests: number // Maximum requests per window
-  keyGenerator?: (request: NextRequest) => string
+interface RateLimitOptions {
+  maxRequests: number
+  windowMs: number
 }
 
-interface RateLimitStore {
-  [key: string]: {
-    count: number
-    resetTime: number
-  }
+interface RateLimitRecord {
+  count: number
+  resetTime: number
 }
 
 class RateLimiter {
-  private store: RateLimitStore = {}
-  private config: RateLimitConfig
+  private store: Map<string, RateLimitRecord>
+  private readonly maxRequests: number
+  private readonly windowMs: number
 
-  constructor(config: RateLimitConfig) {
-    this.config = config
-    // Clean up expired entries every 5 minutes
-    setInterval(() => this.cleanup(), 5 * 60 * 1000)
+  constructor(options: RateLimitOptions) {
+    this.store = new Map()
+    this.maxRequests = options.maxRequests
+    this.windowMs = options.windowMs
   }
 
-  private cleanup() {
+  /**
+   * Check if a key has exceeded its rate limit
+   * @param key - Unique identifier (usually IP address)
+   * @returns Object containing limit information
+   */
+  check(key: string): { limited: boolean; remaining: number; resetTime: number } {
     const now = Date.now()
-    Object.keys(this.store).forEach((key) => {
-      if (this.store[key].resetTime < now) {
-        delete this.store[key]
-      }
-    })
-  }
+    const record = this.store.get(key)
 
-  private getKey(request: NextRequest): string {
-    if (this.config.keyGenerator) {
-      return this.config.keyGenerator(request)
-    }
-
-    // Default: use IP address
-    const forwarded = request.headers.get("x-forwarded-for")
-    const ip = forwarded ? forwarded.split(",")[0] : request.ip || "unknown"
-    return `${ip}:${request.nextUrl.pathname}`
-  }
-
-  async isAllowed(request: NextRequest): Promise<{ allowed: boolean; resetTime?: number; remaining?: number }> {
-    const key = this.getKey(request)
-    const now = Date.now()
-
-    if (!this.store[key] || this.store[key].resetTime < now) {
-      // First request or window expired
-      this.store[key] = {
+    // If no record exists or the window has expired, create a new record
+    if (!record || now > record.resetTime) {
+      const newRecord = {
         count: 1,
-        resetTime: now + this.config.windowMs,
+        resetTime: now + this.windowMs,
       }
+      this.store.set(key, newRecord)
       return {
-        allowed: true,
-        resetTime: this.store[key].resetTime,
-        remaining: this.config.maxRequests - 1,
+        limited: false,
+        remaining: this.maxRequests - 1,
+        resetTime: newRecord.resetTime,
       }
     }
 
-    if (this.store[key].count >= this.config.maxRequests) {
-      return {
-        allowed: false,
-        resetTime: this.store[key].resetTime,
-        remaining: 0,
-      }
-    }
+    // Increment the count
+    record.count += 1
 
-    this.store[key].count++
+    // Check if the limit has been exceeded
+    const limited = record.count > this.maxRequests
+    const remaining = Math.max(0, this.maxRequests - record.count)
+
     return {
-      allowed: true,
-      resetTime: this.store[key].resetTime,
-      remaining: this.config.maxRequests - this.store[key].count,
+      limited,
+      remaining,
+      resetTime: record.resetTime,
+    }
+  }
+
+  /**
+   * Clean up expired records to prevent memory leaks
+   */
+  cleanup(): void {
+    const now = Date.now()
+    for (const [key, record] of this.store.entries()) {
+      if (now > record.resetTime) {
+        this.store.delete(key)
+      }
     }
   }
 }
 
-// Rate limiter instances for different endpoints
-export const authRateLimiter = new RateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 5, // 5 attempts per 15 minutes
-})
+// Create default rate limiters
+const standardLimiter = new RateLimiter({ maxRequests: 100, windowMs: 60 * 1000 }) // 100 requests per minute
+const strictLimiter = new RateLimiter({ maxRequests: 10, windowMs: 60 * 1000 }) // 10 requests per minute
 
-export const apiRateLimiter = new RateLimiter({
-  windowMs: 60 * 1000, // 1 minute
-  maxRequests: 100, // 100 requests per minute
-})
-
-export const searchRateLimiter = new RateLimiter({
-  windowMs: 60 * 1000, // 1 minute
-  maxRequests: 30, // 30 searches per minute
-})
-
-export async function withRateLimit(
-  request: NextRequest,
-  rateLimiter: RateLimiter,
-  handler: () => Promise<Response>,
-): Promise<Response> {
-  const { allowed, resetTime, remaining } = await rateLimiter.isAllowed(request)
-
-  if (!allowed) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error: "Too many requests. Please try again later.",
-        resetTime,
-      }),
-      {
-        status: 429,
-        headers: {
-          "Content-Type": "application/json",
-          "X-RateLimit-Limit": rateLimiter["config"].maxRequests.toString(),
-          "X-RateLimit-Remaining": "0",
-          "X-RateLimit-Reset": Math.ceil(resetTime! / 1000).toString(),
-          "Retry-After": Math.ceil((resetTime! - Date.now()) / 1000).toString(),
-        },
-      },
-    )
-  }
-
-  const response = await handler()
-
-  // Add rate limit headers to successful responses
-  response.headers.set("X-RateLimit-Limit", rateLimiter["config"].maxRequests.toString())
-  response.headers.set("X-RateLimit-Remaining", remaining!.toString())
-  response.headers.set("X-RateLimit-Reset", Math.ceil(resetTime! / 1000).toString())
-
-  return response
+// Schedule cleanup every 5 minutes
+if (typeof setInterval === "function") {
+  setInterval(
+    () => {
+      standardLimiter.cleanup()
+      strictLimiter.cleanup()
+    },
+    5 * 60 * 1000,
+  )
 }
 
-// Apply rate limit function
-export async function applyRateLimit(
-  request: NextRequest,
+/**
+ * Apply rate limiting to a request
+ * @param key - Unique identifier (usually IP address)
+ * @param strict - Whether to use strict rate limiting
+ * @returns Rate limit check result
+ */
+export function applyRateLimit(
   key: string,
-  maxRequests: number,
-  windowMs: number,
-): Promise<{ success: boolean; limit?: number; period?: number; retryAfter?: number }> {
-  const rateLimiter = new RateLimiter({
-    windowMs: windowMs * 1000, // Convert to milliseconds
-    maxRequests,
-    keyGenerator: (req) => `${key}:${req.ip || "unknown"}`,
-  })
+  strict = false,
+): { limited: boolean; remaining: number; resetTime: number } {
+  const limiter = strict ? strictLimiter : standardLimiter
+  return limiter.check(key)
+}
 
-  const { allowed, resetTime } = await rateLimiter.isAllowed(request)
+export default {
+  applyRateLimit,
+  standardLimiter,
+  strictLimiter,
+}
 
-  if (!allowed) {
-    return {
-      success: false,
-      limit: maxRequests,
-      period: windowMs,
-      retryAfter: Math.ceil((resetTime! - Date.now()) / 1000),
+/**
+ * Higher-order function to add rate limiting to API routes
+ */
+export function withRateLimit(handler: Function, strict = false) {
+  return async (request: Request) => {
+    // Get client IP for rate limiting
+    const forwarded = request.headers.get("x-forwarded-for")
+    const ip = forwarded ? forwarded.split(",")[0] : "unknown"
+
+    // Apply rate limiting
+    const { limited, remaining, resetTime } = applyRateLimit(ip, strict)
+
+    if (limited) {
+      return new Response(
+        JSON.stringify({
+          error: "Too many requests",
+          retryAfter: Math.ceil((resetTime - Date.now()) / 1000),
+        }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "X-RateLimit-Remaining": remaining.toString(),
+            "X-RateLimit-Reset": new Date(resetTime).toISOString(),
+            "Retry-After": Math.ceil((resetTime - Date.now()) / 1000).toString(),
+          },
+        },
+      )
     }
-  }
 
-  return { success: true }
+    // Call the original handler
+    const response = await handler(request)
+
+    // Add rate limit headers to successful responses
+    if (response instanceof Response) {
+      response.headers.set("X-RateLimit-Remaining", remaining.toString())
+      response.headers.set("X-RateLimit-Reset", new Date(resetTime).toISOString())
+    }
+
+    return response
+  }
+}
+
+/**
+ * Specialized rate limiter for authentication endpoints
+ */
+export const authRateLimiter = {
+  check: (key: string) => applyRateLimit(key, true), // Use strict rate limiting for auth
+  middleware: (handler: Function) => withRateLimit(handler, true),
 }

@@ -5,19 +5,25 @@ import { logger } from "@/lib/logger"
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("🔍 Login API called")
+
     const body = await request.json()
+    console.log("📝 Request body received:", { email: body.email, hasPassword: !!body.password })
 
     // Validate input
     const validatedData = loginSchema.parse(body)
     const { email, password } = validatedData
+    console.log("✅ Input validation passed")
 
     // Attempt to sign in with Supabase
+    console.log("🔐 Attempting Supabase sign in...")
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
 
     if (error) {
+      console.error("❌ Supabase auth error:", error)
       logger.warn("Login attempt failed", {
         email,
         error: error.message,
@@ -27,17 +33,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid email or password",
+          error: error.message || "Invalid email or password",
         },
         { status: 401 },
       )
     }
 
     if (!data.user) {
+      console.error("❌ No user returned from Supabase")
       return NextResponse.json(
         {
           success: false,
-          error: "Authentication failed",
+          error: "Authentication failed - no user data",
+        },
+        { status: 401 },
+      )
+    }
+
+    console.log("✅ Supabase auth successful:", {
+      userId: data.user.id,
+      email: data.user.email,
+      emailConfirmed: data.user.email_confirmed_at !== null,
+    })
+
+    // Check if user is confirmed
+    if (!data.user.email_confirmed_at) {
+      console.warn("⚠️ User email not confirmed")
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Please confirm your email address before signing in",
         },
         { status: 401 },
       )
@@ -48,6 +73,8 @@ export async function POST(request: NextRequest) {
       email: data.user.email,
       timestamp: new Date().toISOString(),
     })
+
+    console.log("✅ Login successful, returning session data")
 
     // Return success with user data
     return NextResponse.json({
@@ -64,6 +91,8 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
+    console.error("💥 Login API error:", error)
+
     logger.error("Login API error", {
       error: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
