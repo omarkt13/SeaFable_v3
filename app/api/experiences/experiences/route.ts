@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import { log } from "@/lib/logger"
 
-// Mock experiences data for testing and development
-export const mockExperiences = [
+// ✅ CORRECT - Internal data (no export)
+const mockExperiences = [
   {
     id: "1",
     title: "Sunset Sailing Adventure",
@@ -56,10 +56,15 @@ export const mockExperiences = [
   },
 ]
 
+// ✅ CORRECT - Only export HTTP handlers
 export async function GET() {
   try {
     log.info("Fetching mock experiences")
-    return NextResponse.json({ experiences: mockExperiences })
+    return NextResponse.json({
+      success: true,
+      experiences: mockExperiences,
+      total: mockExperiences.length,
+    })
   } catch (error) {
     log.error("Error fetching mock experiences", { error })
     return NextResponse.json({ error: "Failed to fetch experiences" }, { status: 500 })
