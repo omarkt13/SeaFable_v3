@@ -1,109 +1,97 @@
 /**
- * Simple in-memory rate limiter for API routes
+ * Rate limiter utility to prevent abuse of API endpoints
  */
 
+// Simple in-memory store for rate limiting
+// In production, this should be replaced with Redis or similar
+const ipRequests: Record<string, { count: number; resetTime: number }> = {}
+
+// Default rate limit settings
+const DEFAULT_WINDOW_MS = 60000 // 1 minute
+const DEFAULT_MAX_REQUESTS = 60 // 60 requests per minute
+
+// Rate limit options interface
 interface RateLimitOptions {
-  maxRequests: number
-  windowMs: number
+  windowMs?: number
+  maxRequests?: number
 }
 
-interface RateLimitRecord {
-  count: number
-  resetTime: number
-}
-
-class RateLimiter {
-  private store: Map<string, RateLimitRecord>
-  private readonly maxRequests: number
-  private readonly windowMs: number
-
-  constructor(options: RateLimitOptions) {
-    this.store = new Map()
-    this.maxRequests = options.maxRequests
-    this.windowMs = options.windowMs
+// Get client IP from request
+function getClientIp(request: Request): string {
+  // Try to get IP from headers first (for proxied requests)
+  const forwardedFor = request.headers.get("x-forwarded-for")
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0].trim()
   }
 
-  /**
-   * Check if a key has exceeded its rate limit
-   * @param key - Unique identifier (usually IP address)
-   * @returns Object containing limit information
-   */
-  check(key: string): { limited: boolean; remaining: number; resetTime: number } {
-    const now = Date.now()
-    const record = this.store.get(key)
+  // Fallback to a placeholder if we can't determine the IP
+  return "unknown-ip"
+}
 
-    // If no record exists or the window has expired, create a new record
-    if (!record || now > record.resetTime) {
-      const newRecord = {
-        count: 1,
-        resetTime: now + this.windowMs,
-      }
-      this.store.set(key, newRecord)
-      return {
-        limited: false,
-        remaining: this.maxRequests - 1,
-        resetTime: newRecord.resetTime,
-      }
+// Check if a request should be rate limited
+function shouldRateLimit(ip: string, options: RateLimitOptions = {}): boolean {
+  const now = Date.now()
+  const windowMs = options.windowMs || DEFAULT_WINDOW_MS
+  const maxRequests = options.maxRequests || DEFAULT_MAX_REQUESTS
+
+  // Initialize or reset if window has expired
+  if (!ipRequests[ip] || now > ipRequests[ip].resetTime) {
+    ipRequests[ip] = {
+      count: 1,
+      resetTime: now + windowMs,
     }
-
-    // Increment the count
-    record.count += 1
-
-    // Check if the limit has been exceeded
-    const limited = record.count > this.maxRequests
-    const remaining = Math.max(0, this.maxRequests - record.count)
-
-    return {
-      limited,
-      remaining,
-      resetTime: record.resetTime,
-    }
+    return false
   }
 
-  /**
-   * Clean up expired records to prevent memory leaks
-   */
-  cleanup(): void {
-    const now = Date.now()
-    for (const [key, record] of this.store.entries()) {
-      if (now > record.resetTime) {
-        this.store.delete(key)
-      }
+  // Increment count
+  ipRequests[ip].count += 1
+
+  // Check if over limit
+  return ipRequests[ip].count > maxRequests
+}
+
+// Clean up old entries periodically
+setInterval(() => {
+  const now = Date.now()
+  for (const ip in ipRequests) {
+    if (now > ipRequests[ip].resetTime) {
+      delete ipRequests[ip]
     }
+  }
+}, 60000) // Clean up every minute
+
+// Higher-order function to wrap API handlers with rate limiting
+export function withRateLimit(handler: Function, options: RateLimitOptions = {}) {
+  return async (req: Request, ...args: any[]) => {
+    const ip = getClientIp(req)
+
+    if (shouldRateLimit(ip, options)) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Too many requests, please try again later",
+        }),
+        {
+          status: 429,
+          headers: {
+            "Content-Type": "application/json",
+            "Retry-After": "60",
+          },
+        },
+      )
+    }
+
+    return handler(req, ...args)
   }
 }
 
-// Create default rate limiters
-const standardLimiter = new RateLimiter({ maxRequests: 100, windowMs: 60 * 1000 }) // 100 requests per minute
-const strictLimiter = new RateLimiter({ maxRequests: 10, windowMs: 60 * 1000 }) // 10 requests per minute
-
-// Schedule cleanup every 5 minutes
-if (typeof setInterval === "function") {
-  setInterval(
-    () => {
-      standardLimiter.cleanup()
-      strictLimiter.cleanup()
-    },
-    5 * 60 * 1000,
-  )
+// Specific rate limiter for authentication endpoints (more strict)
+export function authRateLimiter(handler: Function) {
+  return withRateLimit(handler, {
+    windowMs: 300000, // 5 minutes
+    maxRequests: 10, // 10 requests per 5 minutes
+  })
 }
 
-/**
- * Apply rate limiting to a request
- * @param key - Unique identifier (usually IP address)
- * @param strict - Whether to use strict rate limiting
- * @returns Rate limit check result
- */
-export function applyRateLimit(
-  key: string,
-  strict = false,
-): { limited: boolean; remaining: number; resetTime: number } {
-  const limiter = strict ? strictLimiter : standardLimiter
-  return limiter.check(key)
-}
-
-export default {
-  applyRateLimit,
-  standardLimiter,
-  strictLimiter,
-}
+// Add this export at the end of the file
+export const applyRateLimit = withRateLimit

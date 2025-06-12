@@ -1,132 +1,49 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { NextResponse } from "next/server"
+import { signInUser } from "@/lib/auth-utils"
 import { loginSchema } from "@/lib/validations"
-import { logger } from "@/lib/logger"
+import { withLogging } from "@/lib/logger"
+import { authRateLimiter } from "@/lib/rate-limiter"
 
-export async function POST(request: NextRequest) {
-  try {
-    console.log("🔍 Login API called")
+export const POST = withLogging(
+  authRateLimiter(async (request: Request) => {
+    try {
+      let body
+      try {
+        body = await request.json()
+        console.log("[SERVER] 📝 Request body received:", body)
+      } catch (jsonError) {
+        console.error("[SERVER] ❌ Error parsing request body:", jsonError)
+        return NextResponse.json({ success: false, error: "Invalid request format" }, { status: 400 })
+      }
 
-    const body = await request.json()
-    console.log("📝 Request body received:", { email: body.email, hasPassword: !!body.password })
+      // Validate input using Zod
+      const validation = loginSchema.safeParse(body)
+      if (!validation.success) {
+        console.log("[SERVER] ❌ Input validation failed:", validation.error.errors)
+        return NextResponse.json({ success: false, error: validation.error.errors[0].message }, { status: 400 })
+      }
 
-    // Validate input
-    const validatedData = loginSchema.parse(body)
-    const { email, password } = validatedData
-    console.log("✅ Input validation passed")
+      const { email, password } = validation.data
+      console.log("[SERVER] ✅ Input validation passed")
 
-    // Attempt to sign in with Supabase
-    console.log("🔐 Attempting Supabase sign in...")
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+      console.log("[SERVER] 🔐 Attempting Supabase sign in...")
+      const result = await signInUser(email, password)
 
-    if (error) {
-      console.error("❌ Supabase auth error:", error)
-      logger.warn("Login attempt failed", {
-        email,
-        error: error.message,
-        timestamp: new Date().toISOString(),
-      })
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message || "Invalid email or password",
-        },
-        { status: 401 },
-      )
+      if (result.success) {
+        console.log(
+          "[SERVER] ✅ Supabase auth successful:",
+          result.user ? { userId: result.user.id, email: result.user.email, role: result.user.role } : "No user data",
+        )
+        console.log("[SERVER] ✅ Login successful, returning session data")
+        // IMPORTANT: Return the full user object from signInUser, which includes role, firstName, etc.
+        return NextResponse.json({ success: true, user: result.user, session: result.session }, { status: 200 })
+      } else {
+        console.log("[SERVER] ❌ Supabase auth failed:", result.error)
+        return NextResponse.json({ success: false, error: result.error }, { status: 401 })
+      }
+    } catch (error) {
+      console.error("[SERVER] 💥 Login API error:", error)
+      return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
     }
-
-    if (!data.user) {
-      console.error("❌ No user returned from Supabase")
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Authentication failed - no user data",
-        },
-        { status: 401 },
-      )
-    }
-
-    console.log("✅ Supabase auth successful:", {
-      userId: data.user.id,
-      email: data.user.email,
-      emailConfirmed: data.user.email_confirmed_at !== null,
-    })
-
-    // Check if user is confirmed
-    if (!data.user.email_confirmed_at) {
-      console.warn("⚠️ User email not confirmed")
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Please confirm your email address before signing in",
-        },
-        { status: 401 },
-      )
-    }
-
-    logger.info("User logged in successfully", {
-      userId: data.user.id,
-      email: data.user.email,
-      timestamp: new Date().toISOString(),
-    })
-
-    console.log("✅ Login successful, returning session data")
-
-    // Return success with user data
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-        emailVerified: data.user.email_confirmed_at !== null,
-      },
-      session: {
-        accessToken: data.session?.access_token,
-        refreshToken: data.session?.refresh_token,
-        expiresAt: data.session?.expires_at,
-      },
-    })
-  } catch (error) {
-    console.error("💥 Login API error:", error)
-
-    logger.error("Login API error", {
-      error: error instanceof Error ? error.message : "Unknown error",
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString(),
-    })
-
-    if (error instanceof Error && error.name === "ZodError") {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid input data",
-          details: error.message,
-        },
-        { status: 400 },
-      )
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Internal server error",
-      },
-      { status: 500 },
-    )
-  }
-}
-
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    },
-  })
-}
+  }),
+)

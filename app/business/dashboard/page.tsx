@@ -4,166 +4,61 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import {
-  Calendar,
-  MapPin,
-  Star,
-  Users,
-  DollarSign,
-  TrendingUp,
-  Ship,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react"
+import { Calendar, Star, DollarSign, Ship, Clock, CheckCircle, AlertCircle, Plus } from "lucide-react"
+import type { BusinessDashboardData } from "@/types/business"
+import { useAuth } from "@/components/auth-provider"
 
-interface BusinessUser {
-  id: string
-  email: string
-  businessName: string
-  contactName: string
-  businessType: string
-}
-
-interface Booking {
-  id: string
-  customerName: string
-  experienceTitle: string
-  date: string
-  status: "confirmed" | "pending" | "completed" | "cancelled"
-  amount: number
-  guests: number
-}
-
-interface Experience {
-  id: string
-  title: string
-  location: string
-  price: number
-  rating: number
-  bookings: number
-  status: "active" | "inactive" | "draft"
-}
-
-export default function BusinessDashboardPage() {
-  const [user, setUser] = useState<BusinessUser | null>(null)
+function BusinessDashboardPage() {
+  const { user, loading: authLoading } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
-  const [bookings, setBookings] = useState<Booking[]>([])
-  const [experiences, setExperiences] = useState<Experience[]>([])
+  const [dashboardData, setDashboardData] = useState<BusinessDashboardData | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
-    // Check business authentication status
-    const isBusinessAuthenticated = localStorage.getItem("isBusinessAuthenticated")
-    const businessUserData = localStorage.getItem("businessUser")
-
-    if (!isBusinessAuthenticated || !businessUserData) {
-      router.push("/business/login")
-      return
+    if (!authLoading) {
+      if (!user || user.role !== "host") {
+        router.push("/business/login")
+        return
+      }
+      loadDashboardData()
     }
+  }, [user, authLoading, router])
 
+  const loadDashboardData = async () => {
     try {
-      const userData = JSON.parse(businessUserData)
-      setUser(userData)
+      setIsLoading(true)
+      const response = await fetch("/api/business/dashboard")
 
-      // Load mock data
-      loadMockData()
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push("/business/login")
+          return
+        }
+        throw new Error("Failed to load dashboard data")
+      }
+
+      const data = await response.json()
+      setDashboardData(data)
     } catch (error) {
-      console.error("Error parsing business user data:", error)
-      router.push("/business/login")
-      return
+      console.error("Error loading dashboard:", error)
+      setError(error instanceof Error ? error.message : "Unknown error")
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
-  }, [router])
-
-  const loadMockData = () => {
-    // Mock bookings data
-    const mockBookings: Booking[] = [
-      {
-        id: "1",
-        customerName: "John Smith",
-        experienceTitle: "Sunset Sailing Adventure",
-        date: "2024-06-15",
-        status: "confirmed",
-        amount: 450,
-        guests: 4,
-      },
-      {
-        id: "2",
-        customerName: "Emma Johnson",
-        experienceTitle: "Island Hopping Tour",
-        date: "2024-06-18",
-        status: "pending",
-        amount: 680,
-        guests: 6,
-      },
-      {
-        id: "3",
-        customerName: "Michael Brown",
-        experienceTitle: "Private Yacht Charter",
-        date: "2024-06-12",
-        status: "completed",
-        amount: 1200,
-        guests: 8,
-      },
-    ]
-
-    // Mock experiences data
-    const mockExperiences: Experience[] = [
-      {
-        id: "1",
-        title: "Sunset Sailing Adventure",
-        location: "Santorini, Greece",
-        price: 450,
-        rating: 4.8,
-        bookings: 24,
-        status: "active",
-      },
-      {
-        id: "2",
-        title: "Island Hopping Tour",
-        location: "Mykonos, Greece",
-        price: 680,
-        rating: 4.9,
-        bookings: 18,
-        status: "active",
-      },
-      {
-        id: "3",
-        title: "Private Yacht Charter",
-        location: "Crete, Greece",
-        price: 1200,
-        rating: 4.7,
-        bookings: 12,
-        status: "draft",
-      },
-    ]
-
-    setBookings(mockBookings)
-    setExperiences(mockExperiences)
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem("isBusinessAuthenticated")
-    localStorage.removeItem("businessUser")
-    router.push("/business/login")
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "confirmed":
-      case "active":
         return "bg-green-100 text-green-800"
       case "pending":
-      case "draft":
         return "bg-yellow-100 text-yellow-800"
       case "completed":
         return "bg-blue-100 text-blue-800"
-      case "cancelled":
-      case "inactive":
+      case "cancelled_user":
+      case "cancelled_host":
         return "bg-red-100 text-red-800"
       default:
         return "bg-gray-100 text-gray-800"
@@ -177,31 +72,41 @@ export default function BusinessDashboardPage() {
         return <CheckCircle className="h-4 w-4" />
       case "pending":
         return <Clock className="h-4 w-4" />
-      case "cancelled":
+      case "cancelled_user":
+      case "cancelled_host":
         return <AlertCircle className="h-4 w-4" />
       default:
         return null
     }
   }
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading business dashboard...</p>
+          <p className="mt-2 text-gray-600">Loading your business dashboard...</p>
         </div>
       </div>
     )
   }
 
-  if (!user) {
-    return null
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Dashboard</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => loadDashboardData()}>Try Again</Button>
+        </div>
+      </div>
+    )
   }
 
-  const totalRevenue = bookings.reduce((sum, booking) => sum + booking.amount, 0)
-  const activeBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "pending").length
-  const completedBookings = bookings.filter((b) => b.status === "completed").length
+  if (!dashboardData) {
+    return null
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -210,12 +115,19 @@ export default function BusinessDashboardPage() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.contactName}!</h1>
-              <p className="text-gray-600">{user.businessName} • Business Dashboard</p>
+              <h1 className="text-3xl font-bold text-gray-900">Business Dashboard</h1>
+              <p className="text-gray-600">Manage your water activities business</p>
             </div>
-            <Button onClick={handleLogout} variant="outline">
-              Sign Out
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => router.push("/business/calendar")}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Calendar
+              </Button>
+              <Button onClick={() => router.push("/business/experiences/new")}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Experience
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -223,12 +135,12 @@ export default function BusinessDashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">€{totalRevenue.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
+              <div className="text-2xl font-bold">€{dashboardData.overview.totalRevenue.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">+{dashboardData.overview.revenueGrowth}% from last month</p>
             </CardContent>
           </Card>
 
@@ -238,8 +150,8 @@ export default function BusinessDashboardPage() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{activeBookings}</div>
-              <p className="text-xs text-muted-foreground">Confirmed & pending</p>
+              <div className="text-2xl font-bold">{dashboardData.overview.activeBookings}</div>
+              <p className="text-xs text-muted-foreground">+{dashboardData.overview.bookingGrowth}% from last month</p>
             </CardContent>
           </Card>
 
@@ -249,10 +161,8 @@ export default function BusinessDashboardPage() {
               <Ship className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{experiences.length}</div>
-              <p className="text-xs text-muted-foreground">
-                {experiences.filter((e) => e.status === "active").length} active
-              </p>
+              <div className="text-2xl font-bold">{dashboardData.overview.totalExperiences}</div>
+              <p className="text-xs text-muted-foreground">All active experiences</p>
             </CardContent>
           </Card>
 
@@ -262,33 +172,71 @@ export default function BusinessDashboardPage() {
               <Star className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">4.8</div>
-              <p className="text-xs text-muted-foreground">From 54 reviews</p>
+              <div className="text-2xl font-bold">{dashboardData.overview.averageRating}</div>
+              <p className="text-xs text-muted-foreground">From customer reviews</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="bookings" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
-            <TabsTrigger value="experiences">Experiences</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
+        {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Bookings */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Upcoming Bookings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Bookings</CardTitle>
+                <CardDescription>Your confirmed bookings for the next few days</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {dashboardData.upcomingBookings.length > 0 ? (
+                  <div className="space-y-4">
+                    {dashboardData.upcomingBookings.map((booking) => (
+                      <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <Calendar className="h-6 w-6 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{booking.experienceTitle}</p>
+                            <p className="text-sm text-gray-600">
+                              {booking.customerName} • {booking.guests} guests
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              {new Date(booking.date).toLocaleDateString()} at {booking.time}
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          View Details
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No upcoming bookings</p>
+                    <Button className="mt-4" onClick={() => router.push("/business/calendar")}>
+                      Set Your Availability
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Bookings Tab */}
-          <TabsContent value="bookings">
+            {/* Recent Bookings */}
             <Card>
               <CardHeader>
                 <CardTitle>Recent Bookings</CardTitle>
-                <CardDescription>Manage your customer bookings and reservations</CardDescription>
+                <CardDescription>Latest customer bookings and their status</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {bookings.map((booking) => (
+                  {dashboardData.recentBookings.map((booking) => (
                     <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                           {getStatusIcon(booking.status)}
                         </div>
                         <div>
@@ -296,137 +244,104 @@ export default function BusinessDashboardPage() {
                           <p className="text-sm text-gray-600">
                             {booking.customerName} • {booking.guests} guests
                           </p>
-                          <p className="text-sm text-gray-500">{booking.date}</p>
+                          <p className="text-sm text-gray-500">{new Date(booking.date).toLocaleDateString()}</p>
                         </div>
                       </div>
                       <div className="text-right">
                         <p className="font-medium">€{booking.amount}</p>
-                        <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
+                        <Badge className={getStatusColor(booking.status)}>{booking.status.replace("_", " ")}</Badge>
                       </div>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-          {/* Experiences Tab */}
-          <TabsContent value="experiences">
+          {/* Right Column - Analytics & Earnings */}
+          <div className="space-y-6">
+            {/* Earnings Summary */}
             <Card>
               <CardHeader>
-                <CardTitle>Your Experiences</CardTitle>
-                <CardDescription>Manage your sailing experiences and listings</CardDescription>
+                <CardTitle>Earnings</CardTitle>
+                <CardDescription>Your financial overview</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {experiences.map((experience) => (
-                    <div key={experience.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                          <Ship className="h-6 w-6 text-purple-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{experience.title}</p>
-                          <p className="text-sm text-gray-600 flex items-center">
-                            <MapPin className="h-4 w-4 mr-1" />
-                            {experience.location}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {experience.bookings} bookings • {experience.rating} ⭐
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">€{experience.price}/day</p>
-                        <Badge className={getStatusColor(experience.status)}>{experience.status}</Badge>
-                      </div>
-                    </div>
-                  ))}
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">This Month</span>
+                  <span className="text-lg font-bold">€{dashboardData.earnings.thisMonth.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Pending Payout</span>
+                  <span className="text-sm text-yellow-600">€{dashboardData.earnings.pending.toLocaleString()}</span>
+                </div>
+                <div className="pt-4 border-t">
+                  <div className="text-sm text-gray-600 mb-2">Next Payout</div>
+                  <div className="text-lg font-semibold">
+                    €{dashboardData.earnings.nextPayout.amount.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {new Date(dashboardData.earnings.nextPayout.date).toLocaleDateString()}
+                  </div>
+                </div>
+                <Button className="w-full" variant="outline" onClick={() => router.push("/business/finances")}>
+                  View Financial Details
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Performance Metrics */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Performance</CardTitle>
+                <CardDescription>Key business metrics</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Booking Conversion</span>
+                    <span className="text-sm text-green-600">{dashboardData.analytics.conversionRate}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-green-600 h-2 rounded-full"
+                      style={{ width: `${dashboardData.analytics.conversionRate}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Customer Satisfaction</span>
+                    <span className="text-sm text-blue-600">{dashboardData.analytics.customerSatisfaction}/5.0</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full"
+                      style={{ width: `${(dashboardData.analytics.customerSatisfaction / 5) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Repeat Customers</span>
+                    <span className="text-sm text-purple-600">{dashboardData.analytics.repeatCustomerRate}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-purple-600 h-2 rounded-full"
+                      style={{ width: `${dashboardData.analytics.repeatCustomerRate}%` }}
+                    ></div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          {/* Analytics Tab */}
-          <TabsContent value="analytics">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Performance Overview</CardTitle>
-                  <CardDescription>Your business metrics at a glance</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Booking Conversion Rate</span>
-                      <span className="text-sm text-green-600">+2.5%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-green-600 h-2 rounded-full" style={{ width: "68%" }}></div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Customer Satisfaction</span>
-                      <span className="text-sm text-blue-600">4.8/5.0</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-blue-600 h-2 rounded-full" style={{ width: "96%" }}></div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Repeat Customers</span>
-                      <span className="text-sm text-purple-600">34%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-purple-600 h-2 rounded-full" style={{ width: "34%" }}></div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Revenue Insights</CardTitle>
-                  <CardDescription>Financial performance breakdown</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                        <TrendingUp className="h-6 w-6 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Monthly Revenue</p>
-                        <p className="text-sm text-gray-600">€{totalRevenue.toLocaleString()}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Users className="h-6 w-6 text-blue-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Total Customers</p>
-                        <p className="text-sm text-gray-600">{completedBookings + activeBookings} served</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                        <DollarSign className="h-6 w-6 text-orange-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Average Booking Value</p>
-                        <p className="text-sm text-gray-600">€{Math.round(totalRevenue / bookings.length)}</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
+
+export default BusinessDashboardPage

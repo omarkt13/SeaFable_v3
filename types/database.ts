@@ -4,7 +4,7 @@ export interface Database {
     Tables: {
       users: {
         Row: {
-          id: string
+          id: string // Changed to string (UUID)
           first_name: string
           last_name: string
           email: string
@@ -15,7 +15,7 @@ export interface Database {
           updated_at: string
         }
         Insert: {
-          id?: string
+          id?: string // Changed to string (UUID)
           first_name: string
           last_name: string
           email: string
@@ -26,7 +26,7 @@ export interface Database {
           updated_at?: string
         }
         Update: {
-          id?: string
+          id?: string // Changed to string (UUID)
           first_name?: string
           last_name?: string
           email?: string
@@ -40,7 +40,7 @@ export interface Database {
       host_profiles: {
         Row: {
           id: string
-          user_id: string
+          user_id: string // Changed to string (UUID)
           name: string
           bio: string | null
           avatar_url: string | null
@@ -59,7 +59,7 @@ export interface Database {
         }
         Insert: {
           id?: string
-          user_id: string
+          user_id: string // Changed to string (UUID)
           name: string
           bio?: string | null
           avatar_url?: string | null
@@ -78,7 +78,7 @@ export interface Database {
         }
         Update: {
           id?: string
-          user_id?: string
+          user_id?: string // Changed to string (UUID)
           name?: string
           bio?: string | null
           avatar_url?: string | null

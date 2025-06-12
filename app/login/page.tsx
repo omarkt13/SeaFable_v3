@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2 } from "lucide-react"
+import { loginSchema } from "@/lib/validations" // Import the login schema
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -25,6 +26,17 @@ export default function LoginPage() {
     setError("")
 
     console.log("🔐 Login form submitted:", { email, hasPassword: !!password })
+    console.log("Client-side sending:", { email, password }) // Confirm actual values
+
+    // Client-side validation
+    const validationResult = loginSchema.safeParse({ email, password })
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0]
+      setError(firstError.message)
+      setIsLoading(false)
+      console.error("❌ Client-side validation failed:", firstError.message)
+      return // Stop submission if validation fails
+    }
 
     try {
       console.log("📡 Making API call to /api/auth/login")
@@ -44,6 +56,8 @@ export default function LoginPage() {
 
       if (data.success) {
         console.log("✅ Login successful, redirecting to dashboard...")
+        localStorage.setItem("isAuthenticated", "true")
+        localStorage.setItem("user", JSON.stringify(data.user)) // Store full user object
         router.push("/dashboard")
       } else {
         console.log("❌ Login failed:", data.error)

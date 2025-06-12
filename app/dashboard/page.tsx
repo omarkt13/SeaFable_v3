@@ -1,46 +1,32 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, MapPin, Star, Users } from "lucide-react"
+import { useAuth } from "@/components/auth-provider" // Import useAuth
 
-interface User {
-  id: string
-  email: string
-  name: string
-}
+// No longer need a separate User interface if using AuthUser from useAuth
+// interface User {
+//   id: string
+//   email: string
+//   name: string
+// }
 
 export default function DashboardPage() {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const { user, loading: isLoading, signOut } = useAuth() // Use useAuth hook
   const router = useRouter()
 
   useEffect(() => {
-    // Check authentication status
-    const isAuthenticated = localStorage.getItem("isAuthenticated")
-    const userData = localStorage.getItem("user")
-
-    if (!isAuthenticated || !userData) {
+    // Redirect if not authenticated and not loading
+    if (!isLoading && !user) {
       router.push("/login")
-      return
     }
+  }, [user, isLoading, router])
 
-    try {
-      setUser(JSON.parse(userData))
-    } catch (error) {
-      console.error("Error parsing user data:", error)
-      router.push("/login")
-      return
-    }
-
-    setIsLoading(false)
-  }, [router])
-
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated")
-    localStorage.removeItem("user")
+  const handleLogout = async () => {
+    await signOut() // Use signOut from useAuth
     router.push("/")
   }
 
@@ -56,7 +42,7 @@ export default function DashboardPage() {
   }
 
   if (!user) {
-    return null
+    return null // Should redirect via useEffect
   }
 
   return (
@@ -65,7 +51,7 @@ export default function DashboardPage() {
         <div className="mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.firstName}!</h1>
               <p className="text-gray-600">Manage your sailing adventures</p>
             </div>
             <Button onClick={handleLogout} variant="outline">

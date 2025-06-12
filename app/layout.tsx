@@ -3,9 +3,9 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import Navigation from "@/components/navigation"
 import { AuthProvider } from "@/components/auth-provider"
 import { Toaster } from "@/components/ui/toaster"
+import NavbarWrapper from "@/components/navbar-wrapper"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-    generator: 'v0.dev'
+  generator: "v0.dev",
 }
 
 export default function RootLayout({
@@ -62,7 +62,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <div className="min-h-screen bg-background">
-              <Navigation />
+              <NavbarWrapper />
               <main>{children}</main>
               <Toaster />
             </div>
