@@ -8,20 +8,20 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   experimental: {
-    serverComponentsExternalPackages: ['bcryptjs', '@supabase/supabase-js'],
-    webpackMemoryOptimizations: true,
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-dropdown-menu']
   },
-  webpack: (config, { isServer, dev }) => {
+  compress: true,
+  swcMinify: true,
+  // Add webpack configuration to handle Node.js core modules
+  webpack: (config, { isServer }) => {
+    // Fixes npm packages that depend on `fs` module
     if (!isServer) {
       config.resolve.fallback = {
+        ...config.resolve.fallback,
         fs: false,
         net: false,
         tls: false,
@@ -32,22 +32,10 @@ const nextConfig = {
         http: false,
         https: false,
         zlib: false,
-        buffer: false,
-        util: false,
-        url: false,
-        querystring: false,
-      }
+      };
     }
-    // Disable webpack cache for production builds
-    if (config.cache && !dev) {
-      config.cache = Object.freeze({
-        type: 'memory',
-      })
-    }
-    return config
+    return config;
   },
-  swcMinify: true,
-  compress: true,
 }
 
 export default nextConfig
