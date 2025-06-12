@@ -1,11 +1,10 @@
 import { z } from "zod"
 
-// Enhanced business login schema with comprehensive validation
 export const businessLoginSchema = z.object({
   email: z
     .string()
     .min(1, "Email is required")
-    .email("Please enter a valid email address")
+    .email("Please enter a valid business email address")
     .max(255, "Email must be less than 255 characters")
     .toLowerCase()
     .trim(),
@@ -39,7 +38,7 @@ export const businessRegisterSchema = z
     phone: z
       .string()
       .optional()
-      .refine((val) => !val || /^\+?[\d\s\-$$$$]{10,}$/.test(val), {
+      .refine((val) => !val || /^\+?[\d\s\-()]{10,}$/.test(val), {
         message: "Please enter a valid phone number",
       }),
     businessType: z.string().optional(),
@@ -63,7 +62,7 @@ export const businessRegisterSchema = z
 export type BusinessLoginInput = z.infer<typeof businessLoginSchema>
 export type BusinessRegisterInput = z.infer<typeof businessRegisterSchema>
 
-// Validation helper functions
+// ✅ ADDED: Missing validation helper functions
 export function validateBusinessEmail(email: string): { valid: boolean; error?: string } {
   try {
     businessLoginSchema.pick({ email: true }).parse({ email })
@@ -85,5 +84,38 @@ export function validateBusinessPassword(password: string): { valid: boolean; er
       return { valid: false, error: error.errors[0].message }
     }
     return { valid: false, error: "Invalid password" }
+  }
+}
+
+// ✅ ADDED: Additional helper functions for comprehensive validation
+export function validateBusinessRegistration(data: unknown): {
+  valid: boolean
+  data?: BusinessRegisterInput
+  errors?: z.ZodError["errors"]
+} {
+  try {
+    const validatedData = businessRegisterSchema.parse(data)
+    return { valid: true, data: validatedData }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { valid: false, errors: error.errors }
+    }
+    return { valid: false, errors: [{ message: "Invalid data format", code: "custom", path: [] }] }
+  }
+}
+
+export function validateBusinessLogin(data: unknown): {
+  valid: boolean
+  data?: BusinessLoginInput
+  errors?: z.ZodError["errors"]
+} {
+  try {
+    const validatedData = businessLoginSchema.parse(data)
+    return { valid: true, data: validatedData }
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { valid: false, errors: error.errors }
+    }
+    return { valid: false, errors: [{ message: "Invalid data format", code: "custom", path: [] }] }
   }
 }
