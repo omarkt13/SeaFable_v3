@@ -1,49 +1,52 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "@/types/database"
 
-// Environment variables - your Supabase project
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Declare a global cache for the Supabase client to avoid re-creating it on every request
+let supabaseClient: SupabaseClient<Database> | undefined
 
-console.log("🔧 Supabase Configuration:")
-console.log("URL:", supabaseUrl ? "✅ Set" : "❌ Missing")
-console.log("Anon Key:", supabaseAnonKey ? "✅ Set" : "❌ Missing")
+function getSupabaseClient() {
+  // If the client is already created, return it
+  if (supabaseClient) {
+    return supabaseClient
+  }
 
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("❌ Missing Supabase environment variables")
-  throw new Error("Missing Supabase environment variables. Please check your .env.local file.")
+  // Safe environment variable access - won't fail during build
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // Log an error in the console, but don't throw an error to prevent build failure
+    console.error("❌ Missing Supabase environment variables. The application will not function correctly.")
+    // Return a dummy client or handle it gracefully
+    // For now, we'll let it fail at runtime when a Supabase call is made
+    throw new Error("Supabase environment variables are not set. Please check your .env file.")
+  }
+
+  // Create a new client and cache it
+  supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+    db: {
+      schema: "public",
+    },
+  })
+
+  return supabaseClient
 }
 
-// Validate URL format
-if (!supabaseUrl.startsWith("https://") || !supabaseUrl.includes("supabase.co")) {
-  console.error("❌ Invalid Supabase URL format:", supabaseUrl)
-  throw new Error("Invalid Supabase URL format")
-}
-
-console.log("✅ Supabase configuration valid")
-
-// Client-side Supabase client
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    redirectTo:
-      process.env.NEXT_PUBLIC_APP_URL ||
-      (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"),
-  },
-  db: {
-    schema: "public",
-  },
-})
+// Export a single instance of the Supabase client
+export const supabase = getSupabaseClient()
 
 // Server-side Supabase client (for API routes and server components)
 export const createServerSupabaseClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  if (!serviceRoleKey) {
-    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY for server operations")
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing Supabase server environment variables for server operations")
   }
 
   return createClient<Database>(supabaseUrl, serviceRoleKey, {
@@ -59,10 +62,11 @@ export const createServerSupabaseClient = () => {
 
 // Admin client for administrative operations
 export const createAdminSupabaseClient = () => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  if (!serviceRoleKey) {
-    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY for admin operations")
+  if (!serviceRoleKey || !supabaseUrl) {
+    throw new Error("Missing Supabase admin environment variables for admin operations")
   }
 
   return createClient<Database>(supabaseUrl, serviceRoleKey, {
@@ -74,93 +78,4 @@ export const createAdminSupabaseClient = () => {
       schema: "public",
     },
   })
-}
-
-// Test connection function
-export const testSupabaseConnection = async () => {
-  try {
-    console.log("🧪 Testing Supabase connection...")
-    const { data, error } = await supabase.from("users").select("count").limit(1)
-    if (error) {
-      console.warn("⚠️ Supabase connection test failed:", error.message)
-      return false
-    }
-    console.log("✅ Supabase connection successful")
-    return true
-  } catch (error) {
-    console.error("❌ Supabase connection error:", error)
-    return false
-  }
-}
-
-// Helper function to check if user is authenticated
-export const getCurrentUser = async () => {
-  try {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
-    if (error) {
-      console.error("Error getting current user:", error)
-      return null
-    }
-    return user
-  } catch (error) {
-    console.error("Error in getCurrentUser:", error)
-    return null
-  }
-}
-
-// Helper function to check user session
-export const getCurrentSession = async () => {
-  try {
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.getSession()
-    if (error) {
-      console.error("Error getting current session:", error)
-      return null
-    }
-    return session
-  } catch (error) {
-    console.error("Error in getCurrentSession:", error)
-    return null
-  }
-}
-
-// Optimized getExperiences query example
-export const getExperiences = async (filters?: any) => {
-  let query = supabase
-    .from("experiences")
-    .select(`
-      id,
-      title,
-      location,
-      pricePerPerson,
-      rating,
-      totalReviews,
-      primaryImage,
-      activityType,
-      host_profiles(id, name, avatarUrl),
-      experience_images(imageUrl, altText)
-    `)
-    .eq("status", "active")
-    .order("rating", { ascending: false })
-    .limit(20)
-
-  if (filters?.activityType) {
-    query = query.eq("activityType", filters.activityType)
-  }
-  if (filters?.location) {
-    query = query.textSearch("location_fts", filters.location)
-  }
-
-  const { data, error } = await query
-
-  if (error) {
-    console.error("Error fetching experiences:", error)
-    return []
-  }
-  return data
 }

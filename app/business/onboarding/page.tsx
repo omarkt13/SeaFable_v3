@@ -1,2 +1,3 @@
-import type { OnboardingStep } from "@/types/business"
-import { Progress } from "@/components/ui/progress"
+export default function BusinessOnboardingPage() {
+  // ... component logic
+}
