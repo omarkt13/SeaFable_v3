@@ -107,6 +107,16 @@ export function withLogging(handler: Function) {
   }
 }
 
+// Security event logging
+export function logSecurityEvent(eventType: string, message: string, data?: any): void {
+  const securityData = {
+    eventType,
+    ...data,
+  }
+
+  log("warn", `SECURITY EVENT [${eventType}]: ${message}`, securityData)
+}
+
 // Add this export at the end of the file
 export const logger = {
   debug,
@@ -114,4 +124,5 @@ export const logger = {
   warn,
   error,
   log,
+  logSecurityEvent,
 }
