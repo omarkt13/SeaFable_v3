@@ -1,19 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import type { Experience } from "@/types"
-// Directly import mockExperiences from the main experiences API route
-import { mockExperiences } from "../experiences/route" // Adjust path as needed
-
-/**
- * @function getMockExperienceById
- * @description Retrieves a mock experience by its ID from the in-memory mock data.
- * @param {string} id - The ID of the experience to retrieve.
- * @returns {Promise<Experience | undefined>} The experience object if found, otherwise undefined.
- */
-const getMockExperienceById = async (id: string): Promise<Experience | undefined> => {
-  // In a real application, this would query a database.
-  // For mocking, we directly filter the in-memory mockExperiences array.
-  return mockExperiences.find((exp) => exp.id === id)
-}
+import { findExperienceById } from "@/lib/mock-data"
 
 /**
  * @function GET
@@ -25,37 +11,29 @@ const getMockExperienceById = async (id: string): Promise<Experience | undefined
  */
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const experience = await getMockExperienceById(params.id)
+    const experience = findExperienceById(params.id)
 
     if (!experience) {
       return NextResponse.json({ success: false, error: "Experience not found" }, { status: 404 })
     }
 
-    // Add more detailed information if needed for the detail page
-    // This part ensures consistency and provides default values if some fields are sparse in mock data
-    const detailedExperience: Experience = {
+    // Add more detailed information for the detail page
+    const detailedExperience = {
       ...experience,
-      description:
-        experience.description ||
-        "A detailed description of this amazing water activity, highlighting its unique features, what to expect, and why it's an unforgettable experience. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-      images:
-        experience.images && experience.images.length > 0
-          ? experience.images
-          : [
-              { id: "img1", imageUrl: experience.primaryImage, altText: experience.title, isPrimary: true },
-              {
-                id: "img2",
-                imageUrl: `/placeholder.svg?height=400&width=600&query=${encodeURIComponent(experience.title)}+view+2`,
-                altText: `${experience.title} - view 2`,
-              },
-              {
-                id: "img3",
-                imageUrl: `/placeholder.svg?height=400&width=600&query=${encodeURIComponent(experience.title)}+view+3`,
-                altText: `${experience.title} - view 3`,
-              },
-            ],
-      itinerary: (experience as any).itinerary || [
-        // Cast to any to access potential itinerary from old structure
+      images: [
+        { id: "img1", imageUrl: experience.primaryImage, altText: experience.title, isPrimary: true },
+        {
+          id: "img2",
+          imageUrl: `/placeholder.svg?height=400&width=600&query=${encodeURIComponent(experience.title)}+view+2`,
+          altText: `${experience.title} - view 2`,
+        },
+        {
+          id: "img3",
+          imageUrl: `/placeholder.svg?height=400&width=600&query=${encodeURIComponent(experience.title)}+view+3`,
+          altText: `${experience.title} - view 3`,
+        },
+      ],
+      itinerary: [
         {
           id: "step1",
           experienceId: params.id,
@@ -81,18 +59,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           timeEstimate: "12:00 PM",
         },
       ],
-      // Ensure hostProfile is fully populated
       hostProfile: {
-        ...experience.hostProfile,
-        bio:
-          experience.hostProfile.bio ||
-          `A passionate and experienced ${experience.hostProfile.hostType} dedicated to providing unforgettable water adventures.`,
-        certifications:
-          experience.hostProfile.certifications ||
-          (experience.activityType === "diving" ? ["PADI Certified"] : ["Safety First Certified"]),
+        ...experience.host,
+        bio: `A passionate and experienced ${experience.activityType} guide dedicated to providing unforgettable water adventures.`,
+        certifications: experience.activityType === "diving" ? ["PADI Certified"] : ["Safety First Certified"],
+        hostType: "individual" as const,
+        languagesSpoken: ["English"],
+        yearsExperience: 5,
+        specialties: [experience.activityType],
+        rating: experience.rating,
+        totalReviews: experience.totalReviews,
       },
-      // Ensure activitySpecificDetails are present
-      activitySpecificDetails: experience.activitySpecificDetails || {
+      activitySpecificDetails: {
         note: "Detailed activity specifics will be provided upon booking or by contacting the host.",
       },
     }
@@ -104,5 +82,53 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   } catch (error) {
     console.error("Error fetching experience by ID:", error)
     return NextResponse.json({ success: false, error: "Failed to fetch experience details" }, { status: 500 })
+  }
+}
+
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { id } = params
+    const body = await request.json()
+
+    const experience = findExperienceById(id)
+
+    if (!experience) {
+      return NextResponse.json({ error: "Experience not found" }, { status: 404 })
+    }
+
+    // In a real app, you'd update the database
+    const updatedExperience = {
+      ...experience,
+      ...body,
+      updatedAt: new Date().toISOString(),
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: updatedExperience,
+    })
+  } catch (error) {
+    console.error("Error updating experience:", error)
+    return NextResponse.json({ error: "Failed to update experience" }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { id } = params
+    const experience = findExperienceById(id)
+
+    if (!experience) {
+      return NextResponse.json({ error: "Experience not found" }, { status: 404 })
+    }
+
+    // In a real app, you'd delete from database
+    return NextResponse.json({
+      success: true,
+      message: "Experience deleted successfully",
+    })
+  } catch (error) {
+    console.error("Error deleting experience:", error)
+    return NextResponse.json({ error: "Failed to delete experience" }, { status: 500 })
   }
 }
