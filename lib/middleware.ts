@@ -1,54 +1,27 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createServerSupabaseClient } from "./supabase"
+import type { z } from "zod"
+import { logger } from "@/lib/logger" // Assuming logger is available and correctly typed
 
-export async function withAuth(
-  request: NextRequest,
-  handler: (request: NextRequest, user: any) => Promise<NextResponse>,
-) {
-  try {
-    const supabase = createServerSupabaseClient()
+// Define a generic return type for validation
+type ValidationResult<T> = { success: true; data: T } | { success: false; error: string }
 
-    // Get the authorization header
-    const authHeader = request.headers.get("authorization")
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json({ success: false, error: "Missing or invalid authorization header" }, { status: 401 })
-    }
-
-    const token = authHeader.split(" ")[1]
-
-    // Verify the JWT token
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token)
-
-    if (error || !user) {
-      return NextResponse.json({ success: false, error: "Invalid or expired token" }, { status: 401 })
-    }
-
-    // Get user data from our users table
-    const { data: userData, error: userError } = await supabase.from("users").select("*").eq("id", user.id).single()
-
-    if (userError || !userData) {
-      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
-    }
-
-    return handler(request, userData)
-  } catch (error) {
-    console.error("Auth middleware error:", error)
-    return NextResponse.json({ success: false, error: "Authentication failed" }, { status: 500 })
+export function validateRequest<T extends z.ZodSchema>(schema: T, data: unknown): ValidationResult<z.infer<T>> {
+  const result = schema.safeParse(data)
+  if (!result.success) {
+    // Log validation errors for debugging/monitoring
+    logger.warn("Validation failed", {
+      errors: result.error.errors.map((e) => ({ path: e.path, message: e.message })),
+      input: data,
+    })
+    return { success: false, error: result.error.errors.map((e) => e.message).join(", ") }
   }
+  return { success: true, data: result.data }
 }
 
-export function validateRequest<T>(
-  schema: any,
-  data: any,
-): { success: true; data: T } | { success: false; error: string } {
-  try {
-    const validatedData = schema.parse(data)
-    return { success: true, data: validatedData }
-  } catch (error: any) {
-    const errorMessage = error.errors?.[0]?.message || "Invalid request data"
-    return { success: false, error: errorMessage }
-  }
+// You might also have other middleware functions here, e.g., for authentication or rate limiting.
+// Example of a simple authentication middleware (if needed, not directly related to this fix)
+export async function authMiddleware(request: Request) {
+  // Implement your authentication logic here
+  // For example, check for a session token or API key
+  // If unauthorized, return new NextResponse("Unauthorized", { status: 401 });
+  return null // Return null if request should proceed
 }

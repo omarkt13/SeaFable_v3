@@ -148,7 +148,7 @@ async function testUserLogins() {
 
 async function runUserSetup() {
   try {
-    console.log("🎯 Starting complete user setup and testing...\n")
+    console.log("��� Starting complete user setup and testing...\n")
 
     // Step 1: Create users
     await createTestUsers()

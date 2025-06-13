@@ -6,7 +6,7 @@ export const mockExperiences = [
     pricePerPerson: 85,
     rating: 4.8,
     totalReviews: 127,
-    primaryImage: "/placeholder.svg?height=400&width=600&text=Sunset+Sailing",
+    primaryImage: "/tropical-beach-aerial.png", // Using existing image
     activityType: "sailing",
     duration: "3 hours",
     maxParticipants: 8,
@@ -14,7 +14,7 @@ export const mockExperiences = [
     host: {
       id: "1",
       name: "Captain Mike",
-      avatarUrl: "/placeholder.svg?height=80&width=80&text=Captain+Mike",
+      avatarUrl: "/placeholder-user.jpg", // Using existing placeholder
       verified: true,
     },
     amenities: ["Life jackets provided", "Snacks included", "Professional guide"],
@@ -28,7 +28,7 @@ export const mockExperiences = [
     pricePerPerson: 65,
     rating: 4.6,
     totalReviews: 89,
-    primaryImage: "/placeholder.svg?height=400&width=600&text=Surfing+Lesson",
+    primaryImage: "/abstract-geometric-shapes.png", // Using existing image
     activityType: "surfing",
     duration: "2 hours",
     maxParticipants: 6,
@@ -36,7 +36,7 @@ export const mockExperiences = [
     host: {
       id: "2",
       name: "Sarah Wave",
-      avatarUrl: "/placeholder.svg?height=80&width=80&text=Sarah+Wave",
+      avatarUrl: "/placeholder-user.jpg",
       verified: true,
     },
     amenities: ["Surfboard included", "Wetsuit provided", "Photo package"],
@@ -50,7 +50,7 @@ export const mockExperiences = [
     pricePerPerson: 120,
     rating: 4.9,
     totalReviews: 156,
-    primaryImage: "/placeholder.svg?height=400&width=600&text=Deep+Sea+Diving",
+    primaryImage: "/tropical-beach-aerial.png", // Using existing image
     activityType: "diving",
     duration: "4 hours",
     maxParticipants: 4,
@@ -58,7 +58,7 @@ export const mockExperiences = [
     host: {
       id: "3",
       name: "Captain Deep",
-      avatarUrl: "/placeholder.svg?height=80&width=80&text=Captain+Deep",
+      avatarUrl: "/placeholder-user.jpg",
       verified: true,
     },
     amenities: ["All equipment included", "Underwater photos", "Lunch provided"],
@@ -72,7 +72,7 @@ export const mockExperiences = [
     pricePerPerson: 55,
     rating: 4.7,
     totalReviews: 203,
-    primaryImage: "/placeholder.svg?height=400&width=600&text=Kayak+Tour",
+    primaryImage: "/abstract-geometric-shapes.png", // Using existing image
     activityType: "kayaking",
     duration: "2.5 hours",
     maxParticipants: 10,
@@ -80,7 +80,7 @@ export const mockExperiences = [
     host: {
       id: "4",
       name: "Nature Guide Tom",
-      avatarUrl: "/placeholder.svg?height=80&width=80&text=Tom+Guide",
+      avatarUrl: "/placeholder-user.jpg",
       verified: true,
     },
     amenities: ["Kayak and paddle included", "Wildlife guide", "Snacks provided"],
@@ -94,7 +94,7 @@ export const mockExperiences = [
     pricePerPerson: 95,
     rating: 4.5,
     totalReviews: 78,
-    primaryImage: "/placeholder.svg?height=400&width=600&text=Fishing+Charter",
+    primaryImage: "/tropical-beach-aerial.png", // Using existing image
     activityType: "fishing",
     duration: "5 hours",
     maxParticipants: 12,
@@ -102,7 +102,7 @@ export const mockExperiences = [
     host: {
       id: "5",
       name: "Captain Fisher",
-      avatarUrl: "/placeholder.svg?height=80&width=80&text=Captain+Fisher",
+      avatarUrl: "/placeholder-user.jpg",
       verified: true,
     },
     amenities: ["Fishing equipment included", "Bait provided", "Fish cleaning service"],
