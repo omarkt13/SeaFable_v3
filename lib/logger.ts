@@ -1,9 +1,8 @@
-/**
- * Logger utility for consistent logging across the application
- */
-
 // Define log levels
 export type LogLevel = "debug" | "info" | "warn" | "error"
+
+// Define security event types
+export type SecurityEventType = "auth" | "access" | "data" | "api"
 
 // Get log level from environment variable or default to 'info'
 const currentLogLevel = (process.env.LOG_LEVEL || "info").toLowerCase() as LogLevel
@@ -21,11 +20,14 @@ function shouldLog(level: LogLevel): boolean {
   return logLevelValues[level] >= logLevelValues[currentLogLevel]
 }
 
+// Helper function to get current timestamp
+const getTimestamp = () => new Date().toISOString()
+
 // Main logger function
 export function log(level: LogLevel, message: string, data?: any): void {
   if (!shouldLog(level)) return
 
-  const timestamp = new Date().toISOString()
+  const timestamp = getTimestamp()
   const logMessage = `[${timestamp}] [${level.toUpperCase()}] ${message}`
 
   switch (level) {
@@ -65,7 +67,7 @@ async function sendLogToWebhook(level: LogLevel, message: string, data?: any): P
       level,
       message,
       data,
-      timestamp: new Date().toISOString(),
+      timestamp: getTimestamp(),
       environment: process.env.NODE_ENV || "development",
       app: "seafable",
     }
@@ -108,14 +110,14 @@ export function withLogging(handler: Function) {
 }
 
 // Security event logging
-export function logSecurityEvent(eventType: string, data?: any): void {
+export function logSecurityEvent(eventType: string, message: string, data?: any): void {
   const securityData = {
     eventType,
-    timestamp: new Date().toISOString(),
+    timestamp: getTimestamp(),
     ...data,
   }
 
-  log("warn", `SECURITY EVENT [${eventType}]`, securityData)
+  log("warn", `SECURITY EVENT [${eventType}]: ${message}`, securityData)
 }
 
 // Authentication event logging
@@ -123,7 +125,7 @@ export function logAuthEvent(event: string, userId?: string, data?: any): void {
   const authData = {
     event,
     userId,
-    timestamp: new Date().toISOString(),
+    timestamp: getTimestamp(),
     ...data,
   }
 
@@ -136,13 +138,13 @@ export function logError(error: Error, context?: any): void {
     message: error.message,
     stack: error.stack,
     ...context,
-    timestamp: new Date().toISOString(),
+    timestamp: getTimestamp(),
   }
 
   log("error", `ERROR: ${error.message}`, errorData)
 }
 
-// Add this export at the end of the file
+// Export the logger object with all methods
 export const logger = {
   debug,
   info,

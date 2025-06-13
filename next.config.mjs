@@ -15,6 +15,7 @@ const nextConfig = {
         hostname: '**.supabase.in',
       },
     ],
+    formats: ['image/webp', 'image/avif'],
   },
 
   // Environment variables validation
@@ -26,6 +27,7 @@ const nextConfig = {
 
   // Experimental features
   experimental: {
+    serverComponentsExternalPackages: ['@supabase/supabase-js'],
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
 
@@ -81,6 +83,12 @@ const nextConfig = {
       },
     ]
   },
+  
+  // Disable powered by header
+  poweredByHeader: false,
+  
+  // Enable compression
+  compress: true,
 }
 
 export default nextConfig
