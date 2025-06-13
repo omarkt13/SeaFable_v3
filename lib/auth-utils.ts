@@ -8,6 +8,7 @@ export interface AuthUser {
   lastName: string
   role: "user" | "host" | "admin"
   avatarUrl?: string
+  profileComplete?: boolean // Added for user onboarding status
 }
 
 /**
@@ -134,6 +135,11 @@ export async function signInUser(email: string, password: string) {
       lastName: data.user.user_metadata?.last_name || "",
       role: "user", // Default role
       avatarUrl: data.user.user_metadata?.avatar_url,
+      profileComplete: !!(
+        data.user.user_metadata?.first_name &&
+        data.user.user_metadata?.first_name !== "User" &&
+        data.user.user_metadata?.last_name
+      ),
     }
 
     try {
@@ -228,7 +234,7 @@ export async function signInUser(email: string, password: string) {
 
         return {
           success: true,
-          user: fallbackAuthUser,
+          user: fallbackAuthUser, // Return fallback which includes profileComplete based on auth metadata
           session: data.session,
         }
       }
@@ -237,6 +243,8 @@ export async function signInUser(email: string, password: string) {
       const userRecord = Array.isArray(userData) ? userData[0] : userData
       console.log("[signInUser] User profile loaded successfully")
 
+      const isProfileComplete = !!(userRecord.first_name && userRecord.first_name !== "User" && userRecord.last_name)
+
       const authUser: AuthUser = {
         id: userRecord.id,
         email: userRecord.email,
@@ -244,6 +252,7 @@ export async function signInUser(email: string, password: string) {
         lastName: userRecord.last_name || "",
         role: userRecord.role || "user", // Default to 'user' if role is missing
         avatarUrl: userRecord.avatar_url || undefined,
+        profileComplete: isProfileComplete,
       }
 
       return {
@@ -306,6 +315,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
       if (error || !userData || userData.length === 0 || (count && count > 1)) {
         console.log("[getCurrentUser] Could not fetch unique user from database, using session data")
+        const isProfileComplete = !!(
+          session.user.user_metadata?.first_name &&
+          session.user.user_metadata?.first_name !== "User" &&
+          session.user.user_metadata?.last_name
+        )
         // Fallback to session data if database fetch fails
         return {
           id: session.user.id,
@@ -314,10 +328,12 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
           lastName: session.user.user_metadata?.last_name || "",
           role: "user", // Default role
           avatarUrl: session.user.user_metadata?.avatar_url,
+          profileComplete: isProfileComplete,
         }
       }
 
       const userRecord = Array.isArray(userData) ? userData[0] : userData
+      const isProfileComplete = !!(userRecord.first_name && userRecord.first_name !== "User" && userRecord.last_name)
 
       return {
         id: userRecord.id,
@@ -326,9 +342,15 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         lastName: userRecord.last_name || "",
         role: userRecord.role || "user", // Default to 'user' if role is missing
         avatarUrl: userRecord.avatar_url || undefined,
+        profileComplete: isProfileComplete,
       }
     } catch (dbError) {
       console.error("[getCurrentUser] Error fetching user data:", dbError)
+      const isProfileComplete = !!(
+        session.user.user_metadata?.first_name &&
+        session.user.user_metadata?.first_name !== "User" &&
+        session.user.user_metadata?.last_name
+      )
       // Fallback to session data if database fetch fails
       return {
         id: session.user.id,
@@ -337,6 +359,7 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
         lastName: session.user.user_metadata?.last_name || "",
         role: "user", // Default role
         avatarUrl: session.user.user_metadata?.avatar_url,
+        profileComplete: isProfileComplete,
       }
     }
   } catch (error) {

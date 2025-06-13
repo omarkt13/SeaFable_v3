@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Eye, EyeOff, User, AlertCircle, CheckCircle } from "lucide-react"
 import { loginSchema } from "@/lib/validations"
 import { logAuthEvent } from "@/lib/auth-logger"
+import { useToast } from "@/hooks/use-toast" // Import useToast
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
   const [loginAttempts, setLoginAttempts] = useState(0)
   const router = useRouter()
+  const { toast } = useToast() // Initialize useToast
 
   // Real-time validation
   useEffect(() => {
@@ -77,9 +79,9 @@ export default function LoginPage() {
       })
 
       const data = await response.json()
-      console.log("📡 Customer login response:", { success: data.success, status: response.status })
+      console.log("📡 Customer login response:", { success: data.success, status: response.status, user: data.user })
 
-      if (data.success) {
+      if (data.success && data.user) {
         console.log("✅ Customer login successful")
 
         // Store user data
@@ -89,12 +91,18 @@ export default function LoginPage() {
 
         logAuthEvent.loginSuccess(data.user.id, data.user.email, "customer")
 
-        // Redirect to customer dashboard
+        toast({
+          title: "Login Successful",
+          description: `Welcome back, ${data.user.firstName || "User"}!`,
+        })
+
+        // For regular users, always redirect to dashboard.
+        // The dashboard can handle prompting for profile completion if data.user.profileComplete is false.
         router.push("/dashboard")
         router.refresh()
       } else {
         console.log("❌ Customer login failed:", data.error)
-        setError(data.error || "Login failed")
+        setError(data.error || "Login failed. Please check your credentials.")
         setLoginAttempts((prev) => prev + 1)
 
         logAuthEvent.loginFailure(email, data.error || "Unknown error", userAgent)

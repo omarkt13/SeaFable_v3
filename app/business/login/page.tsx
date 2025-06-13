@@ -77,9 +77,14 @@ export default function BusinessLoginPage() {
       })
 
       const data = await response.json()
-      console.log("📡 Business login response:", { success: data.success, status: response.status })
+      console.log("📡 Business login response:", {
+        success: data.success,
+        status: response.status,
+        user: data.user,
+        needsOnboarding: data.needsOnboarding,
+      })
 
-      if (data.success) {
+      if (data.success && data.user) {
         console.log("✅ Business login successful")
 
         // Store user data
@@ -89,28 +94,22 @@ export default function BusinessLoginPage() {
 
         logAuthEvent.loginSuccess(data.user.id, data.user.email, "business")
 
-        // Show success message if there's a warning
-        if (data.warning) {
-          console.warn("⚠️ Login warning:", data.warning)
-          toast({
-            title: "Login Successful",
-            description: data.warning,
-            variant: "default",
-          })
-        } else {
-          toast({
-            title: "Login Successful",
-            description: `Welcome back, ${data.user.businessName}!`,
-            variant: "default",
-          })
-        }
+        toast({
+          title: "Login Successful",
+          description: `Welcome back, ${data.user.businessName || "Partner"}!`,
+        })
 
-        // Redirect to business dashboard
-        router.push("/business/dashboard")
-        router.refresh()
+        if (data.needsOnboarding) {
+          console.log("🚀 Redirecting to business onboarding")
+          router.push("/business/onboarding")
+        } else {
+          console.log("🚀 Redirecting to business dashboard")
+          router.push("/business/dashboard")
+        }
+        router.refresh() // Ensure auth state is updated globally
       } else {
         console.log("❌ Business login failed:", data.error)
-        setError(data.error || "Login failed")
+        setError(data.error || "Login failed. Please check your credentials.")
         setLoginAttempts((prev) => prev + 1)
 
         logAuthEvent.loginFailure(email, data.error || "Unknown error", userAgent)
