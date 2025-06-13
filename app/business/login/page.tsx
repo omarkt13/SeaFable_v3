@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, Eye, EyeOff, Building2, AlertCircle, CheckCircle } from "lucide-react"
 import { businessLoginSchema, validateBusinessEmail, validateBusinessPassword } from "@/lib/business-validations"
 import { logAuthEvent } from "@/lib/auth-logger"
+import { useToast } from "@/hooks/use-toast"
 
 export default function BusinessLoginPage() {
   const [email, setEmail] = useState("")
@@ -23,6 +24,7 @@ export default function BusinessLoginPage() {
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({})
   const [loginAttempts, setLoginAttempts] = useState(0)
   const router = useRouter()
+  const { toast } = useToast()
 
   // Real-time validation
   useEffect(() => {
@@ -90,6 +92,17 @@ export default function BusinessLoginPage() {
         // Show success message if there's a warning
         if (data.warning) {
           console.warn("⚠️ Login warning:", data.warning)
+          toast({
+            title: "Login Successful",
+            description: data.warning,
+            variant: "default",
+          })
+        } else {
+          toast({
+            title: "Login Successful",
+            description: `Welcome back, ${data.user.businessName}!`,
+            variant: "default",
+          })
         }
 
         // Redirect to business dashboard

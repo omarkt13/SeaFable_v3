@@ -44,8 +44,67 @@ export async function POST(request: Request) {
     // Create Supabase client
     const supabase = createClient()
 
+    // Special handling for test credentials in development
+    if (
+      process.env.NODE_ENV === "development" &&
+      email === "test.business@seafable.com" &&
+      password === "TestPassword123!"
+    ) {
+      console.log("[BUSINESS_LOGIN] 🧪 Using test business credentials in development mode")
+
+      // Check if test user exists
+      const { data: existingUser } = await supabase.auth.admin.getUserByEmail(email)
+
+      // If test user doesn't exist, create it
+      if (!existingUser) {
+        console.log("[BUSINESS_LOGIN] 🧪 Creating test business user")
+        try {
+          // Create test user in auth
+          const { data: authData, error: createError } = await supabase.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true,
+            user_metadata: {
+              business_name: "Test Business",
+              contact_name: "Test Contact",
+            },
+          })
+
+          if (createError) {
+            console.error("[BUSINESS_LOGIN] ❌ Failed to create test user:", createError.message)
+          } else if (authData.user) {
+            console.log("[BUSINESS_LOGIN] ✅ Created test auth user:", authData.user.id)
+
+            // Create host profile
+            const { error: profileError } = await supabase.from("host_profiles").insert({
+              id: authData.user.id,
+              user_id: authData.user.id,
+              name: "Test Contact",
+              business_name: "Test Business",
+              phone: "+1234567890",
+              host_type: "company",
+              bio: "This is a test business account",
+              rating: 4.5,
+              total_reviews: 10,
+            })
+
+            if (profileError) {
+              console.error("[BUSINESS_LOGIN] ❌ Failed to create test profile:", profileError.message)
+            } else {
+              console.log("[BUSINESS_LOGIN] ✅ Created test business profile")
+            }
+          }
+        } catch (createError) {
+          console.error("[BUSINESS_LOGIN] ❌ Error creating test user:", createError)
+        }
+      }
+    }
+
     // Step 1: Authenticate with Supabase Auth
     console.log("[BUSINESS_LOGIN] 🔐 Attempting Supabase authentication...")
+    console.log("[BUSINESS_LOGIN] 📧 Email:", email)
+    console.log("[BUSINESS_LOGIN] 🔑 Password length:", password?.length || 0)
+
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -53,6 +112,7 @@ export async function POST(request: Request) {
 
     if (authError) {
       console.error("[BUSINESS_LOGIN] ❌ Supabase auth failed:", authError.message)
+      console.error("[BUSINESS_LOGIN] ❌ Error details:", JSON.stringify(authError))
 
       // Provide specific error messages
       let errorMessage = "Authentication failed"
@@ -136,6 +196,24 @@ export async function POST(request: Request) {
           },
           { status: 403 },
         )
+      }
+
+      // Create host profile for the user if it doesn't exist
+      console.log("[BUSINESS_LOGIN] 🔄 Creating missing host profile for user:", authData.user.id)
+      const { error: createProfileError } = await supabase.from("host_profiles").insert({
+        id: authData.user.id,
+        user_id: authData.user.id,
+        name: authData.user.user_metadata?.contact_name || "Business Contact",
+        business_name: authData.user.user_metadata?.business_name || "Business Account",
+        host_type: "company",
+        rating: 0,
+        total_reviews: 0,
+      })
+
+      if (createProfileError) {
+        console.error("[BUSINESS_LOGIN] ❌ Failed to create host profile:", createProfileError.message)
+      } else {
+        console.log("[BUSINESS_LOGIN] ✅ Created host profile for user:", authData.user.id)
       }
 
       // Create minimal business user object for fallback

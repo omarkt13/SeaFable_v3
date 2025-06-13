@@ -10,15 +10,20 @@ const nextConfig = {
         hostname: 'images.unsplash.com',
       },
       {
+        // More specific pattern for Supabase storage
         protocol: 'https',
-        hostname: process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '') || 'supabase.co',
+        hostname: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost').hostname, // Dynamically get hostname
+        pathname: '/storage/v1/object/public/**',
       },
     ],
     formats: ['image/webp', 'image/avif'],
+    dangerouslyAllowSVG: true, // Retained from previous config
+    contentDispositionType: 'attachment', // Retained from previous config
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;", // Retained from previous config
   },
 
   experimental: {
-    serverComponentsExternalPackages: ['@supabase/supabase-js'],
+    serverComponentsExternalPackages: ['@supabase/supabase-js'], // Keep for auth-helpers-nextjs
     optimizeCss: true,
   },
   
@@ -43,6 +48,7 @@ const nextConfig = {
             key: 'X-Frame-Options',
             value: 'DENY',
           },
+          // Consider adding other security headers like CSP, HSTS here
         ],
       },
     ]

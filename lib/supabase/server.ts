@@ -1,37 +1,40 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
+import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
+import type { Database } from "@/types/database"
 
 export function createClient() {
   const cookieStore = cookies()
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
-    console.error("Missing Supabase environment variables. Please check your .env.local file.")
-    throw new Error("Missing required environment variables for Supabase connection")
+  // Ensure we have the required environment variables
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL environment variable")
   }
 
-  return createServerClient(supabaseUrl, supabaseServiceRoleKey, {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable")
+  }
+
+  // For admin operations, use service role key if available
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  return createServerClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL, supabaseKey, {
     cookies: {
       get(name: string) {
         return cookieStore.get(name)?.value
       },
-      set(name: string, value: string, options: CookieOptions) {
+      set(name: string, value: string, options: any) {
         try {
           cookieStore.set({ name, value, ...options })
         } catch (error) {
-          // The `set` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
+          // Handle "Cannot modify cookies after they have been sent to the client" error
+          console.error("Error setting cookie:", error)
         }
       },
-      remove(name: string, options: CookieOptions) {
+      remove(name: string, options: any) {
         try {
           cookieStore.set({ name, value: "", ...options })
         } catch (error) {
-          // The `delete` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing
-          // user sessions.
+          console.error("Error removing cookie:", error)
         }
       },
     },
