@@ -108,13 +108,38 @@ export function withLogging(handler: Function) {
 }
 
 // Security event logging
-export function logSecurityEvent(eventType: string, message: string, data?: any): void {
+export function logSecurityEvent(eventType: string, data?: any): void {
   const securityData = {
     eventType,
+    timestamp: new Date().toISOString(),
     ...data,
   }
 
-  log("warn", `SECURITY EVENT [${eventType}]: ${message}`, securityData)
+  log("warn", `SECURITY EVENT [${eventType}]`, securityData)
+}
+
+// Authentication event logging
+export function logAuthEvent(event: string, userId?: string, data?: any): void {
+  const authData = {
+    event,
+    userId,
+    timestamp: new Date().toISOString(),
+    ...data,
+  }
+
+  log("info", `AUTH EVENT [${event}]${userId ? ` [User: ${userId}]` : ""}`, authData)
+}
+
+// Error logging with additional context
+export function logError(error: Error, context?: any): void {
+  const errorData = {
+    message: error.message,
+    stack: error.stack,
+    ...context,
+    timestamp: new Date().toISOString(),
+  }
+
+  log("error", `ERROR: ${error.message}`, errorData)
 }
 
 // Add this export at the end of the file
@@ -125,4 +150,6 @@ export const logger = {
   error,
   log,
   logSecurityEvent,
+  logAuthEvent,
+  logError,
 }
