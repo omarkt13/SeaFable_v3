@@ -8,7 +8,7 @@ import { Loader2, AlertTriangle, Info, MapPin, CalendarDays, Users } from "lucid
 import type { Experience, ActivityType } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { cn } from "@/utils/cn" // Assuming cn is a utility function for class names
+import { cn } from "@/lib/utils" // Assuming cn is a utility function for class names
 
 const ITEMS_PER_PAGE = 9
 
