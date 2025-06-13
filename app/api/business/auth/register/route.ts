@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Validate request data
     const validation = validateRequest(businessRegisterSchema, body)
     if (!validation.success) {
-      logger.logSecurityEvent("Invalid business registration data", {
+      logger.logSecurityEvent("validation", "Invalid business registration data", {
         error: validation.error,
         ip: request.ip,
       })
