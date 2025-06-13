@@ -19,6 +19,7 @@ const nextConfig = {
 
   experimental: {
     serverComponentsExternalPackages: ['@supabase/supabase-js'],
+    optimizeCss: true,
   },
   
   typescript: {
@@ -37,6 +38,10 @@ const nextConfig = {
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
           },
         ],
       },

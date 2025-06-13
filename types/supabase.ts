@@ -1,8 +1,6 @@
-// This file contains type definitions for your Supabase database tables
-
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
-export type Database = {
+export interface Database {
   public: {
     Tables: {
       bookings: {
@@ -11,46 +9,65 @@ export type Database = {
           user_id: string
           experience_id: string
           booking_date: string
-          participants: number
+          start_time: string | null
+          end_time: string | null
+          status: "pending" | "confirmed" | "cancelled" | "completed"
           total_price: number
-          status: string
+          guests_count: number
+          special_requests: string | null
+          contact_phone: string | null
           created_at: string
           updated_at: string
+          payment_status: "pending" | "paid" | "refunded" | "failed"
+          payment_id: string | null
+          refund_id: string | null
         }
         Insert: {
           id?: string
           user_id: string
           experience_id: string
           booking_date: string
-          participants: number
+          start_time?: string | null
+          end_time?: string | null
+          status?: "pending" | "confirmed" | "cancelled" | "completed"
           total_price: number
-          status?: string
+          guests_count: number
+          special_requests?: string | null
+          contact_phone?: string | null
           created_at?: string
           updated_at?: string
+          payment_status?: "pending" | "paid" | "refunded" | "failed"
+          payment_id?: string | null
+          refund_id?: string | null
         }
         Update: {
           id?: string
           user_id?: string
           experience_id?: string
           booking_date?: string
-          participants?: number
+          start_time?: string | null
+          end_time?: string | null
+          status?: "pending" | "confirmed" | "cancelled" | "completed"
           total_price?: number
-          status?: string
+          guests_count?: number
+          special_requests?: string | null
+          contact_phone?: string | null
           created_at?: string
           updated_at?: string
+          payment_status?: "pending" | "paid" | "refunded" | "failed"
+          payment_id?: string | null
+          refund_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "bookings_experience_id_fkey"
             columns: ["experience_id"]
-            isOneToOne: false
             referencedRelation: "experiences"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "bookings_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -59,43 +76,51 @@ export type Database = {
       captains: {
         Row: {
           id: string
-          host_id: string
-          name: string
-          bio: string
-          years_experience: number
+          user_id: string
+          full_name: string
+          bio: string | null
+          years_experience: number | null
           certifications: string[] | null
-          profile_image: string | null
+          profile_image_url: string | null
+          license_number: string | null
+          license_type: string | null
+          license_expiry: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          host_id: string
-          name: string
-          bio: string
-          years_experience: number
+          user_id: string
+          full_name: string
+          bio?: string | null
+          years_experience?: number | null
           certifications?: string[] | null
-          profile_image?: string | null
+          profile_image_url?: string | null
+          license_number?: string | null
+          license_type?: string | null
+          license_expiry?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          host_id?: string
-          name?: string
-          bio?: string
-          years_experience?: number
+          user_id?: string
+          full_name?: string
+          bio?: string | null
+          years_experience?: number | null
           certifications?: string[] | null
-          profile_image?: string | null
+          profile_image_url?: string | null
+          license_number?: string | null
+          license_type?: string | null
+          license_expiry?: string | null
           created_at?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "captains_host_id_fkey"
-            columns: ["host_id"]
-            isOneToOne: false
-            referencedRelation: "host_profiles"
+            foreignKeyName: "captains_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -135,7 +160,6 @@ export type Database = {
           {
             foreignKeyName: "experience_images_experience_id_fkey"
             columns: ["experience_id"]
-            isOneToOne: false
             referencedRelation: "experiences"
             referencedColumns: ["id"]
           },
@@ -147,9 +171,11 @@ export type Database = {
           experience_id: string
           day_number: number
           title: string
-          description: string
-          duration_hours: number | null
+          description: string | null
+          duration_minutes: number | null
           location: string | null
+          start_time: string | null
+          end_time: string | null
           created_at: string
           updated_at: string
         }
@@ -158,9 +184,11 @@ export type Database = {
           experience_id: string
           day_number: number
           title: string
-          description: string
-          duration_hours?: number | null
+          description?: string | null
+          duration_minutes?: number | null
           location?: string | null
+          start_time?: string | null
+          end_time?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -169,9 +197,11 @@ export type Database = {
           experience_id?: string
           day_number?: number
           title?: string
-          description?: string
-          duration_hours?: number | null
+          description?: string | null
+          duration_minutes?: number | null
           location?: string | null
+          start_time?: string | null
+          end_time?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -179,7 +209,6 @@ export type Database = {
           {
             foreignKeyName: "experience_itinerary_experience_id_fkey"
             columns: ["experience_id"]
-            isOneToOne: false
             referencedRelation: "experiences"
             referencedColumns: ["id"]
           },
@@ -190,16 +219,33 @@ export type Database = {
           id: string
           host_id: string
           title: string
-          description: string
-          location: string
+          description: string | null
+          short_description: string | null
+          location: string | null
+          specific_location: string | null
+          country: string | null
           activity_type: string
-          price: number
-          duration: number
-          max_participants: number
-          image_urls: string[] | null
-          rating: number | null
-          review_count: number | null
-          status: string | null
+          category: string[]
+          duration_hours: number | null
+          duration_display: string | null
+          max_guests: number | null
+          min_guests: number | null
+          price_per_person: number | null
+          difficulty_level: "beginner" | "intermediate" | "advanced" | "all_levels" | null
+          rating: number
+          total_reviews: number
+          total_bookings: number
+          primary_image_url: string | null
+          weather_contingency: string | null
+          included_amenities: string[] | null
+          what_to_bring: string[] | null
+          min_age: number | null
+          max_age: number | null
+          age_restriction_details: string | null
+          activity_specific_details: Json | null
+          tags: string[] | null
+          seasonal_availability: string[] | null
+          is_active: boolean
           created_at: string
           updated_at: string
         }
@@ -207,16 +253,33 @@ export type Database = {
           id?: string
           host_id: string
           title: string
-          description: string
-          location: string
+          description?: string | null
+          short_description?: string | null
+          location?: string | null
+          specific_location?: string | null
+          country?: string | null
           activity_type: string
-          price: number
-          duration: number
-          max_participants: number
-          image_urls?: string[] | null
-          rating?: number | null
-          review_count?: number | null
-          status?: string | null
+          category: string[]
+          duration_hours?: number | null
+          duration_display?: string | null
+          max_guests?: number | null
+          min_guests?: number | null
+          price_per_person?: number | null
+          difficulty_level?: "beginner" | "intermediate" | "advanced" | "all_levels" | null
+          rating?: number
+          total_reviews?: number
+          total_bookings?: number
+          primary_image_url?: string | null
+          weather_contingency?: string | null
+          included_amenities?: string[] | null
+          what_to_bring?: string[] | null
+          min_age?: number | null
+          max_age?: number | null
+          age_restriction_details?: string | null
+          activity_specific_details?: Json | null
+          tags?: string[] | null
+          seasonal_availability?: string[] | null
+          is_active?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -224,16 +287,33 @@ export type Database = {
           id?: string
           host_id?: string
           title?: string
-          description?: string
-          location?: string
+          description?: string | null
+          short_description?: string | null
+          location?: string | null
+          specific_location?: string | null
+          country?: string | null
           activity_type?: string
-          price?: number
-          duration?: number
-          max_participants?: number
-          image_urls?: string[] | null
-          rating?: number | null
-          review_count?: number | null
-          status?: string | null
+          category?: string[]
+          duration_hours?: number | null
+          duration_display?: string | null
+          max_guests?: number | null
+          min_guests?: number | null
+          price_per_person?: number | null
+          difficulty_level?: "beginner" | "intermediate" | "advanced" | "all_levels" | null
+          rating?: number
+          total_reviews?: number
+          total_bookings?: number
+          primary_image_url?: string | null
+          weather_contingency?: string | null
+          included_amenities?: string[] | null
+          what_to_bring?: string[] | null
+          min_age?: number | null
+          max_age?: number | null
+          age_restriction_details?: string | null
+          activity_specific_details?: Json | null
+          tags?: string[] | null
+          seasonal_availability?: string[] | null
+          is_active?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -241,7 +321,6 @@ export type Database = {
           {
             foreignKeyName: "experiences_host_id_fkey"
             columns: ["host_id"]
-            isOneToOne: false
             referencedRelation: "host_profiles"
             referencedColumns: ["id"]
           },
@@ -251,36 +330,39 @@ export type Database = {
         Row: {
           id: string
           host_id: string
+          date: string
           views: number
           bookings: number
           revenue: number
+          cancellations: number
           average_rating: number | null
-          period_start: string
-          period_end: string
+          new_reviews: number
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           host_id: string
-          views: number
-          bookings: number
-          revenue: number
+          date: string
+          views?: number
+          bookings?: number
+          revenue?: number
+          cancellations?: number
           average_rating?: number | null
-          period_start: string
-          period_end: string
+          new_reviews?: number
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           host_id?: string
+          date?: string
           views?: number
           bookings?: number
           revenue?: number
+          cancellations?: number
           average_rating?: number | null
-          period_start?: string
-          period_end?: string
+          new_reviews?: number
           created_at?: string
           updated_at?: string
         }
@@ -288,7 +370,6 @@ export type Database = {
           {
             foreignKeyName: "host_analytics_host_id_fkey"
             columns: ["host_id"]
-            isOneToOne: false
             referencedRelation: "host_profiles"
             referencedColumns: ["id"]
           },
@@ -298,27 +379,42 @@ export type Database = {
         Row: {
           id: string
           host_id: string
-          experience_id: string
+          experience_id: string | null
           date: string
-          available_slots: number
+          start_time: string | null
+          end_time: string | null
+          is_available: boolean
+          max_bookings: number | null
+          current_bookings: number
+          notes: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           host_id: string
-          experience_id: string
+          experience_id?: string | null
           date: string
-          available_slots: number
+          start_time?: string | null
+          end_time?: string | null
+          is_available?: boolean
+          max_bookings?: number | null
+          current_bookings?: number
+          notes?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           host_id?: string
-          experience_id?: string
+          experience_id?: string | null
           date?: string
-          available_slots?: number
+          start_time?: string | null
+          end_time?: string | null
+          is_available?: boolean
+          max_bookings?: number | null
+          current_bookings?: number
+          notes?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -326,14 +422,12 @@ export type Database = {
           {
             foreignKeyName: "host_availability_experience_id_fkey"
             columns: ["experience_id"]
-            isOneToOne: false
             referencedRelation: "experiences"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "host_availability_host_id_fkey"
             columns: ["host_id"]
-            isOneToOne: false
             referencedRelation: "host_profiles"
             referencedColumns: ["id"]
           },
@@ -345,9 +439,14 @@ export type Database = {
           host_id: string
           business_name: string | null
           business_address: string | null
+          business_phone: string | null
+          business_email: string | null
           tax_id: string | null
-          payment_details: Json | null
-          notification_preferences: Json | null
+          payment_methods: string[] | null
+          cancellation_policy: string | null
+          refund_policy: string | null
+          insurance_provider: string | null
+          insurance_policy_number: string | null
           created_at: string
           updated_at: string
         }
@@ -356,9 +455,14 @@ export type Database = {
           host_id: string
           business_name?: string | null
           business_address?: string | null
+          business_phone?: string | null
+          business_email?: string | null
           tax_id?: string | null
-          payment_details?: Json | null
-          notification_preferences?: Json | null
+          payment_methods?: string[] | null
+          cancellation_policy?: string | null
+          refund_policy?: string | null
+          insurance_provider?: string | null
+          insurance_policy_number?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -367,9 +471,14 @@ export type Database = {
           host_id?: string
           business_name?: string | null
           business_address?: string | null
+          business_phone?: string | null
+          business_email?: string | null
           tax_id?: string | null
-          payment_details?: Json | null
-          notification_preferences?: Json | null
+          payment_methods?: string[] | null
+          cancellation_policy?: string | null
+          refund_policy?: string | null
+          insurance_provider?: string | null
+          insurance_policy_number?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -377,7 +486,6 @@ export type Database = {
           {
             foreignKeyName: "host_business_settings_host_id_fkey"
             columns: ["host_id"]
-            isOneToOne: true
             referencedRelation: "host_profiles"
             referencedColumns: ["id"]
           },
@@ -389,8 +497,13 @@ export type Database = {
           host_id: string
           booking_id: string
           amount: number
-          status: string
+          fee_amount: number
+          net_amount: number
+          currency: string
+          status: "pending" | "paid" | "failed"
           payout_date: string | null
+          payout_method: string | null
+          payout_reference: string | null
           created_at: string
           updated_at: string
         }
@@ -399,8 +512,13 @@ export type Database = {
           host_id: string
           booking_id: string
           amount: number
-          status: string
+          fee_amount: number
+          net_amount: number
+          currency: string
+          status?: "pending" | "paid" | "failed"
           payout_date?: string | null
+          payout_method?: string | null
+          payout_reference?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -409,8 +527,13 @@ export type Database = {
           host_id?: string
           booking_id?: string
           amount?: number
-          status?: string
+          fee_amount?: number
+          net_amount?: number
+          currency?: string
+          status?: "pending" | "paid" | "failed"
           payout_date?: string | null
+          payout_method?: string | null
+          payout_reference?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -418,14 +541,12 @@ export type Database = {
           {
             foreignKeyName: "host_earnings_booking_id_fkey"
             columns: ["booking_id"]
-            isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "host_earnings_host_id_fkey"
             columns: ["host_id"]
-            isOneToOne: false
             referencedRelation: "host_profiles"
             referencedColumns: ["id"]
           },
@@ -435,36 +556,57 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          business_name: string
-          description: string | null
-          website: string | null
-          phone: string | null
-          profile_image: string | null
-          verified: boolean
+          name: string
+          bio: string | null
+          avatar_url: string | null
+          years_experience: number | null
+          certifications: string[] | null
+          specialties: string[] | null
+          rating: number
+          total_reviews: number
+          host_type: "captain" | "instructor" | "guide" | "company" | "individual_operator"
+          languages_spoken: string[] | null
+          business_name: string | null
+          business_registration_id: string | null
+          insurance_details: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          business_name: string
-          description?: string | null
-          website?: string | null
-          phone?: string | null
-          profile_image?: string | null
-          verified?: boolean
+          name: string
+          bio?: string | null
+          avatar_url?: string | null
+          years_experience?: number | null
+          certifications?: string[] | null
+          specialties?: string[] | null
+          rating?: number
+          total_reviews?: number
+          host_type: "captain" | "instructor" | "guide" | "company" | "individual_operator"
+          languages_spoken?: string[] | null
+          business_name?: string | null
+          business_registration_id?: string | null
+          insurance_details?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          business_name?: string
-          description?: string | null
-          website?: string | null
-          phone?: string | null
-          profile_image?: string | null
-          verified?: boolean
+          name?: string
+          bio?: string | null
+          avatar_url?: string | null
+          years_experience?: number | null
+          certifications?: string[] | null
+          specialties?: string[] | null
+          rating?: number
+          total_reviews?: number
+          host_type?: "captain" | "instructor" | "guide" | "company" | "individual_operator"
+          languages_spoken?: string[] | null
+          business_name?: string | null
+          business_registration_id?: string | null
+          insurance_details?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -472,7 +614,6 @@ export type Database = {
           {
             foreignKeyName: "host_profiles_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -482,30 +623,39 @@ export type Database = {
         Row: {
           id: string
           host_id: string
-          name: string
-          email: string
+          user_id: string | null
+          full_name: string
+          email: string | null
           role: string
           permissions: string[]
+          avatar_url: string | null
+          bio: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           host_id: string
-          name: string
-          email: string
+          user_id?: string | null
+          full_name: string
+          email?: string | null
           role: string
           permissions: string[]
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           host_id?: string
-          name?: string
-          email?: string
+          user_id?: string | null
+          full_name?: string
+          email?: string | null
           role?: string
           permissions?: string[]
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -513,8 +663,13 @@ export type Database = {
           {
             foreignKeyName: "host_team_members_host_id_fkey"
             columns: ["host_id"]
-            isOneToOne: false
             referencedRelation: "host_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "host_team_members_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -522,31 +677,40 @@ export type Database = {
       reviews: {
         Row: {
           id: string
-          booking_id: string
           user_id: string
           experience_id: string
+          booking_id: string | null
           rating: number
-          comment: string | null
+          content: string | null
+          host_response: string | null
+          host_response_date: string | null
+          is_verified: boolean
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          booking_id: string
           user_id: string
           experience_id: string
+          booking_id?: string | null
           rating: number
-          comment?: string | null
+          content?: string | null
+          host_response?: string | null
+          host_response_date?: string | null
+          is_verified?: boolean
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          booking_id?: string
           user_id?: string
           experience_id?: string
+          booking_id?: string | null
           rating?: number
-          comment?: string | null
+          content?: string | null
+          host_response?: string | null
+          host_response_date?: string | null
+          is_verified?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -554,21 +718,18 @@ export type Database = {
           {
             foreignKeyName: "reviews_booking_id_fkey"
             columns: ["booking_id"]
-            isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "reviews_experience_id_fkey"
             columns: ["experience_id"]
-            isOneToOne: false
             referencedRelation: "experiences"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "reviews_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -595,16 +756,16 @@ export type Database = {
           email: string
           full_name: string | null
           avatar_url: string | null
-          role: string | null
+          role: "user" | "host" | "admin"
           created_at: string
           updated_at: string
         }
         Insert: {
-          id: string
+          id?: string
           email: string
           full_name?: string | null
           avatar_url?: string | null
-          role?: string | null
+          role?: "user" | "host" | "admin"
           created_at?: string
           updated_at?: string
         }
@@ -613,7 +774,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           avatar_url?: string | null
-          role?: string | null
+          role?: "user" | "host" | "admin"
           created_at?: string
           updated_at?: string
         }
@@ -634,64 +795,3 @@ export type Database = {
     }
   }
 }
-
-type PublicSchema = Database[Extract<keyof Database, "public">]
-
-export type Tables<
-  PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] & PublicSchema["Views"]) | { schema: keyof Database },
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-      Database[PublicTableNameOrOptions["schema"]]["Views"])[Extract<
-      keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-        Database[PublicTableNameOrOptions["schema"]]["Views"]),
-      string
-    >]
-  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] & PublicSchema["Views"])
-    ? (PublicSchema["Tables"] & PublicSchema["Views"])[PublicTableNameOrOptions]
-    : never
-
-export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
-    | { schema: keyof Database; table: keyof PublicSchema["Tables"] },
-> = PublicTableNameOrOptions extends { schema: keyof Database; table: keyof PublicSchema["Tables"] }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][PublicTableNameOrOptions["table"]] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
-
-export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
-    | { schema: keyof Database; table: keyof PublicSchema["Tables"] },
-> = PublicTableNameOrOptions extends { schema: keyof Database; table: keyof PublicSchema["Tables"] }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][PublicTableNameOrOptions["table"]] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  PublicEnumNameOrOptions extends
-    | keyof PublicSchema["Enums"]
-    | { schema: keyof Database; enum: keyof PublicSchema["Enums"] },
-> = PublicEnumNameOrOptions extends { schema: keyof Database; enum: keyof PublicSchema["Enums"] }
-  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][PublicEnumNameOrOptions["enum"]]
-  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
-    : never

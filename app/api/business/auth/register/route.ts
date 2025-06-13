@@ -1,157 +1,165 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { businessRegisterSchema } from "@/lib/business-validations"
-import { validateRequest } from "@/lib/middleware"
-import { logger } from "@/lib/logger"
 import { supabase } from "@/lib/supabase"
+import { businessRegisterSchema } from "@/lib/business-validations"
+import { logger } from "@/lib/logger"
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting check
-    const ip = request.ip || request.headers.get("x-forwarded-for") || "unknown"
+    const body = await request.json()
 
-    // Parse request body
-    let body
-    try {
-      body = await request.json()
-    } catch (parseError) {
-      logger.error("Failed to parse request body", {
-        error: parseError instanceof Error ? parseError.message : "Unknown parse error",
-        ip,
-        timestamp: new Date().toISOString(),
-      })
-      return NextResponse.json({ success: false, error: "Invalid request body" }, { status: 400 })
-    }
-
-    // Validate request data
-    const validation = validateRequest(businessRegisterSchema, body)
-    if (!validation.success) {
-      logger.logSecurityEvent("validation", "Invalid business registration data", {
-        error: validation.error,
-        ip: request.ip,
-      })
-      return NextResponse.json({ success: false, error: validation.error }, { status: 400 })
-    }
-
-    // ✅ FIXED: Use contactName instead of firstName/lastName
-    const {
-      email,
-      password,
-      contactName, // ✅ Using contactName as in the schema
-      businessName,
-      businessType,
-      phone,
-      location,
-      description,
-    } = validation.data
+    // Validate input
+    const validatedData = businessRegisterSchema.parse(body)
+    const { email, password, businessName, firstName, lastName, hostType } = validatedData
 
     // Check if user already exists
-    const { data: existingUser } = await supabase.from("users").select("id").eq("email", email).maybeSingle()
+    const { data: existingUser } = await supabase.from("users").select("id").eq("email", email).single()
 
     if (existingUser) {
-      logger.logAuthEvent("Business registration attempt with existing email", undefined, {
-        email,
-        ip,
+      logger.logSecurityEvent({
+        eventType: "registration-attempt",
+        outcome: "failed",
+        reason: "email-exists",
+        metadata: {
+          email,
+          businessName,
+          timestamp: new Date().toISOString(),
+        },
       })
-      return NextResponse.json({ success: false, error: "Email already registered" }, { status: 409 })
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: "User with this email already exists",
+        },
+        { status: 409 },
+      )
     }
 
     // Create user with Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          name: contactName, // ✅ Using contactName
-          businessName,
-          businessType,
-          userType: "business",
+          full_name: `${firstName} ${lastName}`,
+          business_name: businessName,
         },
         emailRedirectTo: process.env.NEXT_PUBLIC_APP_URL
-          ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
-          : `${request.headers.get("origin") || "http://localhost:3000"}/auth/callback`,
+          ? `${process.env.NEXT_PUBLIC_APP_URL}/business/auth/callback`
+          : `${request.headers.get("origin") || "http://localhost:3000"}/business/auth/callback`,
       },
     })
 
-    if (authError) {
-      logger.logAuthEvent("Business registration auth failed", undefined, {
+    if (error) {
+      logger.warn("Business registration attempt failed", {
         email,
-        error: authError.message,
-        ip,
+        businessName,
+        error: error.message,
+        timestamp: new Date().toISOString(),
       })
-      return NextResponse.json({ success: false, error: authError.message }, { status: 400 })
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: 400 },
+      )
     }
 
-    if (!authData.user) {
-      logger.logError(new Error("No user returned from Supabase auth signup"), {
-        email,
-        ip,
-      })
-      return NextResponse.json({ success: false, error: "Failed to create user account" }, { status: 500 })
+    if (!data.user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to create business account",
+        },
+        { status: 500 },
+      )
     }
 
-    // Create user profile in database
+    // Create user profile in database - updated to match schema
     const { error: profileError } = await supabase.from("users").insert({
-      id: authData.user.id,
-      email: authData.user.email,
-      name: contactName, // ✅ Using contactName as name
-      role: "host", // Business users are hosts
+      id: data.user.id,
+      email: data.user.email || email,
+      full_name: `${firstName} ${lastName}`,
+      avatar_url: null,
+      role: "host",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
 
     if (profileError) {
-      logger.logError(new Error("Failed to create user profile"), {
-        userId: authData.user.id,
+      logger.error("Failed to create business user profile", {
+        userId: data.user.id,
         error: profileError.message,
-        ip,
+        timestamp: new Date().toISOString(),
       })
     }
 
-    // Create business profile
-    const { error: businessError } = await supabase.from("host_profiles").insert({
-      user_id: authData.user.id,
+    // Create host profile
+    const { error: hostProfileError } = await supabase.from("host_profiles").insert({
+      user_id: data.user.id,
+      name: businessName,
+      host_type: hostType || "company",
       business_name: businessName,
-      business_type: businessType || "other",
-      contact_phone: phone || "",
-      contact_email: email,
-      contact_name: contactName, // ✅ Using contactName
+      rating: 0,
+      total_reviews: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
 
-    if (businessError) {
-      logger.logError(new Error("Failed to create business profile"), {
-        userId: authData.user.id,
-        error: businessError.message,
-        ip,
+    if (hostProfileError) {
+      logger.error("Failed to create host profile", {
+        userId: data.user.id,
+        error: hostProfileError.message,
+        timestamp: new Date().toISOString(),
       })
     }
 
-    logger.logAuthEvent("Business registration successful", authData.user.id, {
-      email: authData.user.email,
+    logger.info("Business registered successfully", {
+      userId: data.user.id,
+      email: data.user.email,
       businessName,
-      ip,
+      timestamp: new Date().toISOString(),
     })
 
     // Return success
     return NextResponse.json({
       success: true,
-      message: authData.session
-        ? "Business account created successfully!"
-        : "Business account created! Please check your email to verify your account.",
+      message: "Business account created successfully. Please check your email to verify your account.",
       user: {
-        id: authData.user.id,
-        email: authData.user.email,
-        emailVerified: !!authData.session,
+        id: data.user.id,
+        email: data.user.email,
+        businessName,
+        emailVerified: false,
       },
-      requiresVerification: !authData.session,
+      requiresVerification: !data.session, // If no session, email verification required
     })
   } catch (error) {
-    logger.logError(error as Error, {
-      endpoint: "business-register",
-      ip: request.ip,
+    logger.error("Business registration API error", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
     })
-    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
+
+    if (error instanceof Error && error.name === "ZodError") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid input data",
+          details: error.message,
+        },
+        { status: 400 },
+      )
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Internal server error",
+      },
+      { status: 500 },
+    )
   }
 }
 

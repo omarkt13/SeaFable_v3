@@ -30,8 +30,7 @@ export async function POST(request: NextRequest) {
       password,
       options: {
         data: {
-          first_name: firstName,
-          last_name: lastName,
+          full_name: `${firstName} ${lastName}`,
         },
         emailRedirectTo: process.env.NEXT_PUBLIC_APP_URL
           ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
@@ -65,12 +64,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create user profile in database
+    // Create user profile in database - updated to match schema
     const { error: profileError } = await supabase.from("users").insert({
       id: data.user.id,
-      email: data.user.email,
-      first_name: firstName,
-      last_name: lastName,
+      email: data.user.email || email,
+      full_name: `${firstName} ${lastName}`,
+      avatar_url: null,
+      role: "user",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
