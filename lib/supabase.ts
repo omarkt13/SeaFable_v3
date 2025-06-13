@@ -15,24 +15,27 @@ function getSupabaseClient() {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      "Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    )
+    console.error("Missing Supabase environment variables. Please check your .env.local file.")
+    throw new Error("Missing required environment variables for Supabase connection")
   }
 
   // Create a new client and cache it
-  supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-    db: {
-      schema: "public",
-    },
-  })
-
-  return supabaseClient
+  try {
+    supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+      db: {
+        schema: "public",
+      },
+    })
+    return supabaseClient
+  } catch (error) {
+    console.error("Failed to initialize Supabase client:", error)
+    throw new Error("Failed to initialize Supabase client. Check server logs for more details.")
+  }
 }
 
 // Export a single instance of the Supabase client
@@ -44,20 +47,24 @@ export const createServerSupabaseClient = () => {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error(
-      "Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY",
-    )
+    console.error("Missing Supabase environment variables for server client.")
+    throw new Error("Missing required environment variables for Supabase server connection")
   }
 
-  return createClient<Database>(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-    db: {
-      schema: "public",
-    },
-  })
+  try {
+    return createClient<Database>(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      db: {
+        schema: "public",
+      },
+    })
+  } catch (error) {
+    console.error("Failed to initialize Supabase server client:", error)
+    throw new Error("Failed to initialize Supabase server client. Check server logs for more details.")
+  }
 }
 
 // Admin client for administrative operations
@@ -66,18 +73,22 @@ export const createAdminSupabaseClient = () => {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error(
-      "Missing Supabase environment variables. Please check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY",
-    )
+    console.error("Missing Supabase environment variables for admin client.")
+    throw new Error("Missing required environment variables for Supabase admin connection")
   }
 
-  return createClient<Database>(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-    db: {
-      schema: "public",
-    },
-  })
+  try {
+    return createClient<Database>(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      db: {
+        schema: "public",
+      },
+    })
+  } catch (error) {
+    console.error("Failed to initialize Supabase admin client:", error)
+    throw new Error("Failed to initialize Supabase admin client. Check server logs for more details.")
+  }
 }

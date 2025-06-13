@@ -170,30 +170,60 @@ export async function signInUser(email: string, password: string) {
       // Check if we have no rows
       if (!userData || userData.length === 0) {
         console.log(`[signInUser] No user profile found in 'users' table for ID: ${data.user.id}`)
-        console.log("[signInUser] Creating user profile from auth data")
+        console.log("[signInUser] Checking if email already exists in users table")
 
-        // Create the missing user profile
-        try {
-          const { error: createError } = await supabase.from("users").upsert(
-            {
-              id: data.user.id,
-              first_name: data.user.user_metadata?.first_name || "User",
-              last_name: data.user.user_metadata?.last_name || "",
-              email: data.user.email || email,
-              role: "user",
-            },
-            {
-              onConflict: "id",
-            },
-          )
+        // First check if the email already exists in the users table
+        const { data: existingUserWithEmail, error: emailCheckError } = await supabase
+          .from("users")
+          .select("id")
+          .eq("email", data.user.email || email)
+          .maybeSingle()
 
-          if (createError) {
-            console.error("[signInUser] Error creating user profile:", createError.message)
+        if (emailCheckError) {
+          console.error("[signInUser] Error checking for existing email:", emailCheckError.message)
+        }
+
+        if (existingUserWithEmail) {
+          console.log(`[signInUser] Found existing user with email: ${data.user.email || email}`)
+          console.log("[signInUser] Updating existing user record with auth ID")
+
+          // Update the existing user record with the auth ID
+          const { error: updateError } = await supabase
+            .from("users")
+            .update({ id: data.user.id })
+            .eq("id", existingUserWithEmail.id)
+
+          if (updateError) {
+            console.error("[signInUser] Error updating existing user:", updateError.message)
           } else {
-            console.log("[signInUser] User profile created successfully")
+            console.log("[signInUser] Successfully linked auth user to existing user record")
           }
-        } catch (createErr) {
-          console.error("[signInUser] Unexpected error creating user profile:", createErr)
+        } else {
+          console.log("[signInUser] Creating new user profile from auth data")
+
+          // Create the missing user profile
+          try {
+            const { error: createError } = await supabase.from("users").upsert(
+              {
+                id: data.user.id,
+                first_name: data.user.user_metadata?.first_name || "User",
+                last_name: data.user.user_metadata?.last_name || "",
+                email: data.user.email || email,
+                role: "user",
+              },
+              {
+                onConflict: "id",
+              },
+            )
+
+            if (createError) {
+              console.error("[signInUser] Error creating user profile:", createError.message)
+            } else {
+              console.log("[signInUser] User profile created successfully")
+            }
+          } catch (createErr) {
+            console.error("[signInUser] Unexpected error creating user profile:", createErr)
+          }
         }
 
         return {
