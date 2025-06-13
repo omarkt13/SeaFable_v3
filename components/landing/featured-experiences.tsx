@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Star, MapPin, Clock, Loader2 } from "lucide-react"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Star, MapPin, Clock, Loader2, ImageIcon } from "lucide-react"
 import { formatPrice } from "@/lib/utils"
 import type { Experience } from "@/types"
 
@@ -41,12 +41,20 @@ const getWeatherLabel = (condition?: string) => {
 export function FeaturedExperiences() {
   const [experiences, setExperiences] = useState<Experience[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchExperiences = async () => {
       try {
+        // Use a try-catch block to handle fetch errors
         const response = await fetch("/api/experiences?limit=6")
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`)
+        }
+
         const result = await response.json()
+
         if (result.success) {
           // Transform data to ensure all required properties exist
           const transformedExperiences = result.data.map((exp: any) => ({
@@ -59,17 +67,20 @@ export function FeaturedExperiences() {
             },
             captain: exp.captain || {
               name: "Captain",
-              avatarUrl: "/placeholder.svg",
+              avatarUrl: "",
               vesselType: "Sailboat",
               rating: 4.8,
             },
-            primaryImage: exp.primaryImage || "/placeholder.svg?height=300&width=400",
+            primaryImage: "", // We'll handle image display with fallbacks
             tags: exp.captain_specialties || exp.tags || [],
           }))
           setExperiences(transformedExperiences)
+        } else {
+          setError("Failed to load experiences")
         }
       } catch (error) {
         console.error("Error fetching experiences:", error)
+        setError("Failed to load experiences. Please try again later.")
       } finally {
         setLoading(false)
       }
@@ -84,6 +95,22 @@ export function FeaturedExperiences() {
         <div className="max-w-7xl mx-auto text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
           <p className="mt-2 text-gray-600">Loading experiences...</p>
+        </div>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section className="py-16 px-4 bg-gray-50">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-red-500">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Retry
+          </button>
         </div>
       </section>
     )
@@ -110,11 +137,25 @@ export function FeaturedExperiences() {
             return (
               <Card key={experience.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
                 <div className="relative">
-                  <img
-                    src={experience.primaryImage || "/placeholder.svg?height=300&width=400&query=sailing boat"}
-                    alt={experience.title || "Sailing experience"}
-                    className="w-full h-48 object-cover"
-                  />
+                  {/* Image with fallback */}
+                  <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                    {experience.primaryImage ? (
+                      <img
+                        src="/placeholder.svg?height=300&width=400"
+                        alt={experience.title || "Sailing experience"}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Replace with placeholder on error
+                          e.currentTarget.src = "/placeholder.svg?height=300&width=400"
+                        }}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-gray-400">
+                        <ImageIcon size={32} />
+                        <span className="text-sm mt-2">Image unavailable</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="absolute top-3 right-3">
                     <Badge className="bg-green-100 text-green-800">
                       {weatherIcon} {weatherLabel}
@@ -170,7 +211,6 @@ export function FeaturedExperiences() {
                   <div className="flex items-center justify-between pt-4 border-t">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={experience.captain?.avatarUrl || "/placeholder.svg"} />
                         <AvatarFallback>{(experience.captain?.name || "Captain").charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div>

@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Star, Clock, Sun, Cloud, CloudRain } from "lucide-react"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Star, Clock, Sun, Cloud, CloudRain, ImageIcon } from "lucide-react"
 
 interface Experience {
   id: number
@@ -49,13 +49,23 @@ export function ExperienceCard({ experience }: ExperienceCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
       <div className="flex flex-col md:flex-row">
-        {/* Image */}
-        <div className="relative md:w-80 h-48 md:h-auto">
-          <img
-            src={experience.image || "/placeholder.svg"}
-            alt={experience.title}
-            className="w-full h-full object-cover"
-          />
+        {/* Image with fallback */}
+        <div className="relative md:w-80 h-48 md:h-auto bg-gray-100">
+          {experience.image ? (
+            <img
+              src="/placeholder.svg?height=300&width=400"
+              alt={experience.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Replace with placeholder on error
+                e.currentTarget.src = "/placeholder.svg?height=300&width=400"
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <ImageIcon className="h-10 w-10 text-gray-400" />
+            </div>
+          )}
           <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-2">
             {getWeatherIcon(experience.weather.condition)}
           </div>
@@ -85,7 +95,6 @@ export function ExperienceCard({ experience }: ExperienceCardProps) {
           {/* Captain Info */}
           <div className="flex items-center mb-4">
             <Avatar className="h-8 w-8 mr-3">
-              <AvatarImage src={experience.captain.avatar || "/placeholder.svg"} />
               <AvatarFallback>{experience.captain.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div>
